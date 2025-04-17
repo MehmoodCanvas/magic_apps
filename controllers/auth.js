@@ -12,7 +12,7 @@ exports.login=(req,res)=>{
     Member.findByEmail(members_email,(err,results)=>{
         if( results.length > 0){
             const member= results[0];
-         bcrypt.compare(members_password, member.members_password, (err, match) => {
+                bcrypt.compare(members_password, member.members_password, (err, match) => {
                 if(match){
 
                     const token = jwt.sign(
