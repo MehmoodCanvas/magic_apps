@@ -38,6 +38,10 @@ exports.register = (req, res) => {
     const { members_first_name, members_last_name, members_email, members_password } = req.body;
     
     bcrypt.hash(members_password, 10, (err, hash) => {
+        if (err) {
+            return res.status(500).send({ error: 'Error hashing password', data: err });
+        }
+
         const newUser = {
             members_first_name,
             members_last_name,
@@ -47,16 +51,22 @@ exports.register = (req, res) => {
         
         Member.createMember(newUser, (err, result) => {
             if (err) {
-                res.send({ error: 'Error creating member', data: err });
+                res.status(500).send({ error: 'Error creating member', data: err });
             } else {
-                const token = jwt.sign(
-                    {
-                        id: result.members_id,
-                        email: result.members_email,
-                        name: `${result.members_first_name} ${result.members_last_name}`
-                    },
-                );
-                res.send({ status: 200, token: token, data: result });
+                try {
+                    const token = jwt.sign(
+                        {
+                            id: result.members_id,
+                            email: result.members_email,
+                            name: `${result.members_first_name} ${result.members_last_name}`
+                        },
+                        process.env.JWT_SECRET,
+                        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+                    );
+                    res.send({ status: 200, token: token, data: newUser });
+                } catch (tokenError) {
+                    res.status(500).send({ error: 'Error generating token', data: tokenError });
+                }
             }
         });
     });

@@ -8,4 +8,6 @@ router.post('/register', auth.register);
 router.get('/dashboard', authMiddleware, (req, res) => {
     res.json({ message: `Welcome ${req.user.name}!`, user: req.user });
 });
+
+
 module.exports = router;
