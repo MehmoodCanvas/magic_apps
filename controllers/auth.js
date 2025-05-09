@@ -77,7 +77,7 @@ exports.register = (req, res) => {
 
     bcrypt.hash(members_password, 10, (err, hash) => {
         if (err) {
-            logger.error(`Error hashing password: ${err}`);
+            logger.error(`Error hashing in  password: ${err}`);
             return res.status(500).send({ error: 'Error hashing password', data: err });
         }
 
