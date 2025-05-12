@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const winston = require('winston');
 require('dotenv').config();
 
-// Configure winston logger
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(
