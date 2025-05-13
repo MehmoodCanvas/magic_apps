@@ -5,3 +5,11 @@
 2025-05-09T17:12:49.993Z [INFO]: Registration attempt for email: demo3@demo.com
 2025-05-09T17:12:50.070Z [INFO]: Password hashed successfully
 2025-05-09T17:12:50.221Z [ERROR]: Error creating member: [object Object]
+2025-05-13T16:48:00.444Z [INFO]: Login attempt for email: demo@demo.com
+2025-05-13T16:48:00.632Z [INFO]: Member found: demo@demo.com
+2025-05-13T16:48:00.709Z [INFO]: Password match successful
+2025-05-13T16:48:00.717Z [INFO]: JWT token generated
+2025-05-13T16:51:20.377Z [INFO]: Login attempt for email: demo@demo.com
+2025-05-13T16:51:21.047Z [INFO]: Member found: demo@demo.com
+2025-05-13T16:51:21.166Z [INFO]: Password match successful
+2025-05-13T16:51:21.174Z [INFO]: JWT token generated
