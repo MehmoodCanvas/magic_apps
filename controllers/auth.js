@@ -93,9 +93,29 @@ exports.register = (req, res) => {
                 logger.error(`Error creating member: ${err}`);
                 return res.status(500).send({ error: 'Error creating member', data: err });
             }
+            if(result){
+                            logger.info(`Member created successfully: ${members_email}`);
 
-            logger.info(`Member created successfully: ${members_email}`);
-            res.status(201).send({ status: 'success', data: result });
+                        Member.findByEmail(newUser.members_email, (err, memberDetails) => {
+                        if (err) {
+                            logger.error(`Error fetching new member details: ${err}`);
+                            return res.status(500).send({ error: 'Error fetching member details', data: err });
+                        }
+                        if (memberDetails) {
+                            const token = jwt.sign(
+                                {
+                                    id: memberDetails.members_id,
+                                    email: memberDetails.members_email,
+                                    name: `${memberDetails.members_first_name} ${memberDetails.members_last_name}`
+                                },
+                                process.env.JWT_SECRET,
+                                { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+                            );
+                            res.status(200).send({ status: 'success', token: token, data: memberDetails[0] });
+                        }
+                    });
+            }
+          
         });
     });
 };
