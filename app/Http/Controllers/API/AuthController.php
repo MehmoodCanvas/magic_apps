@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
@@ -16,8 +17,10 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
+            'first_name'     => 'required|string|max:255',
+            'last_name'     => 'required|string|max:255',
             'email'    => 'required|string|email|max:255|unique:users',
+            'phone'     => 'max:20',
             'password' => 'required|string|min:6|confirmed',
         ]);
 
@@ -26,8 +29,10 @@ class AuthController extends Controller
         }
 
         $user = User::create([
-            'name'     => $request->name,
+            'first_name'     => $request->first_name,
+            'last_name'     => $request->last_name,
             'email'    => $request->email,
+            'phone'     => $request->phone,
             'password' => Hash::make($request->password),
         ]);
 
@@ -97,6 +102,17 @@ class AuthController extends Controller
     // 👤 Authenticated user
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        return response()->json([
+            'user' => $user,
+            'profile' => $user->profile->load([
+                'country',
+                'qualification',
+                'employmentStatus',
+                'preferredWorkStyle',
+                'category',
+                'subCategory'
+            ])
+        ]);
     }
 }
