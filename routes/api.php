@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\Api\FeedPostController;
 use App\Http\Controllers\API\UserProfileController;
 
 /*
@@ -15,6 +16,13 @@ use App\Http\Controllers\API\UserProfileController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+Route::fallback(function(){
+    return response()->json([
+        'status' => false,
+        'message' => 'API route not found.',
+    ], 404);
+});
 
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
@@ -35,4 +43,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/work-style', [UserProfileController::class, 'workStyles']);
     Route::get('/categories', [UserProfileController::class, 'categories']);
     Route::get('/sub-categories', [UserProfileController::class, 'subCategories']);
+
+    Route::get('/posts', [FeedPostController::class, 'allPost']);
+    Route::get('/user/posts', [FeedPostController::class, 'userPost']);
+    Route::get('/user/share/posts', [FeedPostController::class, 'userSharePost']);
+    Route::get('/user/post/attachments', [FeedPostController::class, 'userPostAttachments']);
+    Route::get('/post/{id}', [FeedPostController::class, 'show']);
+
+    Route::post('/create/post', [FeedPostController::class, 'store']);
+    Route::post('/update/post/{post_id}', [FeedPostController::class, 'update']);
+    Route::post('/delete/post/{id}', [FeedPostController::class, 'destroy']);
+
+    // Route::post('/posts/{id}/attachments', [FeedPostController::class, 'addAttachment']);
+    Route::post('/delete/attachments/{id}', [FeedPostController::class, 'deleteAttachment']);
+    Route::post('/post/like/{id}', [FeedPostController::class, 'like']);
+    Route::post('/post/comment/{id}', [FeedPostController::class, 'comment']);
+    Route::post('/post/share/{id}', [FeedPostController::class, 'share']);
+
+    Route::get('/post/like/{id}', [FeedPostController::class, 'getLike']);
+    Route::get('/post/comment/{id}', [FeedPostController::class, 'getComment']);
+    Route::get('/post/share/{id}', [FeedPostController::class, 'share']);
 });
