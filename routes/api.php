@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\FeedPostController;
+use App\Http\Controllers\API\GoalController;
 use App\Http\Controllers\API\UserProfileController;
 
 /*
@@ -63,4 +64,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/post/like/{id}', [FeedPostController::class, 'getLike']);
     Route::get('/post/comment/{id}', [FeedPostController::class, 'getComment']);
     Route::get('/post/share/{id}', [FeedPostController::class, 'share']);
+
+
+    Route::get('/goals', [GoalController::class, 'index']);
+    Route::post('/create/goals', [GoalController::class, 'store']);
+    Route::post('/update/goals/{id}', [GoalController::class, 'update']);
+    Route::post('/update-status/goals/{id}', [GoalController::class, 'updateStatus']);
+    Route::post('/delete/goals/{id}', [GoalController::class, 'destroy']);
 });
