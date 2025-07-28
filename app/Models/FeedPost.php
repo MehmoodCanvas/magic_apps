@@ -22,6 +22,10 @@ class FeedPost extends Model
         return $this->hasMany(PostLike::class, 'post_id');
     }
 
+    public function getIsLikedAttribute(){
+        return $this->likes()->where('user_id', auth()->id())->exists();
+    }
+
     public function shares() {
        return $this->hasMany(FeedPost::class, 'original_post_id');
     }
@@ -34,6 +38,7 @@ class FeedPost extends Model
     {
         return $this->belongsTo(FeedPost::class, 'original_post_id');
     }
+
 
     // public function sharedPosts()
     // {

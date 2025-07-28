@@ -7,23 +7,42 @@ use App\Models\PostAttachment;
 use App\Models\PostComment;
 use App\Models\PostLike;
 use App\Models\FeedPost;
-use App\Models\BlogShare;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class FeedPostController extends Controller
 {
     public function allPost()
     {
         try {
-            $posts = FeedPost::where('is_published', 1)->with(['user', 'attachments', 'sharedPosts.user', 'sharedPosts.attachments'])
-            ->withCount(['likes', 'comments', 'shares']) // 👈 only count
-            ->latest()
-            ->paginate(10); // 👈 10 per page (adjust as needed)
+            // $posts = FeedPost::where('is_published', 1)->with(['user', 'attachments', 'sharedPosts.user', 'sharedPosts.attachments'])
+            // ->withCount(['likes', 'comments', 'shares',]) // 👈 only count
+            // ->latest()
+            // ->paginate(10); // 👈 10 per page (adjust as needed)
+
+            // // Add 'is_liked' for each post
+            // $posts->getCollection()->transform(function ($post) {
+            //     $post->append('is_liked');
+            //     return $post;
+            // });
+
+            $userId = auth()->id();
+            $posts = FeedPost::select('feed_posts.*')
+                ->with(['user', 'attachments', 'sharedPosts.user', 'sharedPosts.attachments'])
+                ->withCount(['likes', 'comments', 'shares'])
+                ->leftJoin('post_likes as pl', function ($join) use ($userId) {
+                    $join->on('feed_posts.id', '=', 'pl.post_id')
+                        ->where('pl.user_id', '=', $userId);
+                })
+                ->addSelect(DB::raw('IF(pl.id IS NULL, false, true) as is_user_liked'))
+                ->where('feed_posts.is_published', 1)
+                ->orderByDesc('feed_posts.created_at')
+                ->paginate(10);
 
             return response()->json([
-                'message' => 'Post shared successfully.',
+                'message' => '',
                 'status' => true,
                 'data' => $posts,
             ]);
@@ -42,6 +61,7 @@ class FeedPostController extends Controller
             ->paginate(10);
 
             return response()->json([
+                'message' => '',
                 'status' => true,
                 'data' => $posts,
             ]);
