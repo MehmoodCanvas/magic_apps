@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\FeedPostController;
 use App\Http\Controllers\API\GoalController;
+use App\Http\Controllers\api\SkillsController;
 use App\Http\Controllers\API\UserProfileController;
 
 /*
@@ -75,4 +76,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/update/goals/{id}', [GoalController::class, 'update']);
     Route::post('/update-status/goals/{id}', [GoalController::class, 'updateStatus']);
     Route::post('/delete/goals/{id}', [GoalController::class, 'destroy']);
+
+
+    Route::prefix('skills')->group(function () {
+        Route::get('/types', [SkillsController::class, 'getTypes']);
+        Route::post('/create-type', [SkillsController::class, 'createType']);
+
+        Route::get('/', [SkillsController::class, 'index']);
+        Route::get('/{id}', [SkillsController::class, 'show']);
+        Route::post('/create', [SkillsController::class, 'store']);
+        Route::post('/update/{id}', [SkillsController::class, 'update']);
+        Route::post('/delete/{id}', [SkillsController::class, 'destroy']);
+
+        Route::post('/add/attachments/{skill_id}', [SkillsController::class, 'uploadAttachments']);
+        Route::post('/remove/attachment/{id}', [SkillsController::class, 'deleteAttachment']);
+    });
+
 });
