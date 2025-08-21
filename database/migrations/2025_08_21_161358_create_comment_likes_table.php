@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('post_comments', function (Blueprint $table) {
+        Schema::create('comment_likes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('post_id')->constrained('feed_posts')->onDelete('cascade');
+            $table->foreignId('comment_id')->constrained('post_comments')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('parent_id')->nullable()->constrained('post_comments')->onDelete('cascade'); // null = main comment, not reply
-            $table->text('comment');
+            $table->unique(['comment_id', 'user_id']);
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('post_comments');
+        Schema::dropIfExists('comment_likes');
     }
 };

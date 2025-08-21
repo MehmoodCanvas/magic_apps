@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CommentLike;
 use App\Models\PostAttachment;
 use App\Models\PostComment;
 use App\Models\PostLike;
@@ -255,6 +256,7 @@ class FeedPostController extends Controller
             $data = $request->validate(['comment' => 'required']);
             $comment = PostComment::create([
                 'post_id' => $id,
+                'parent_id' => $request->parent_id,
                 'user_id' => $request->user()->id,
                 'comment' => $data['comment'],
             ]);
@@ -266,6 +268,32 @@ class FeedPostController extends Controller
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    public function commentLike($comment_id)
+    {
+        $like = CommentLike::where('comment_id', $comment_id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if ($like) {
+            $like->delete();
+            $message = 'unliked';
+        } else {
+            CommentLike::create([
+                'comment_id' => $comment_id,
+                'user_id'    => auth()->id(),
+            ]);
+            $message = 'Liked';
+        }
+
+        $likeCount = CommentLike::where('comment_id', $comment_id)->count();
+
+        return response()->json([
+            'message' => $message,
+            'status' => true,
+            'like_count' => $likeCount,
+        ]);
     }
 
     public function like($id)
@@ -312,10 +340,34 @@ class FeedPostController extends Controller
     {
         try {
 
-            $comment = PostComment::where('post_id', $id)->with('user')->latest()->paginate(20);
+            // $comment = PostComment::with(['user', 'replies.user', 'likes'])->where('post_id', $id)->whereNull('parent_id')->latest()->paginate(20);
+
+            $userId = auth()->id();
+            $comments = PostComment::select('post_comments.*')
+                        ->with(['user', 'replies' => function ($query) use ($userId) {
+                            $query->select('post_comments.*')
+                                ->with('user')
+                                ->withCount(['likes', 'replies'])
+                                ->leftJoin('comment_likes as cl', function ($join) use ($userId) {
+                                    $join->on('post_comments.id', '=', 'cl.comment_id')
+                                        ->where('cl.user_id', '=', $userId);
+                                })
+                                ->addSelect(DB::raw('IF(cl.id IS NULL, false, true) as is_user_liked'));
+                        }])
+                        ->withCount(['likes', 'replies'])
+                        ->where('post_comments.post_id', $id)
+                        ->whereNull('post_comments.parent_id')
+                        ->leftJoin('comment_likes as cl', function ($join) use ($userId) {
+                            $join->on('post_comments.id', '=', 'cl.comment_id')
+                                ->where('cl.user_id', '=', $userId);
+                        })
+                        ->addSelect(DB::raw('IF(cl.id IS NULL, false, true) as is_user_liked'))
+                        ->latest()
+                        ->paginate(20);
+
             return response()->json([
                 'status' => true,
-                'data' => $comment,
+                'data' => $comments,
             ]);
 
         } catch (\Exception $e) {

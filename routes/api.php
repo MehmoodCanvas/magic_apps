@@ -64,6 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/delete/attachments/{id}', [FeedPostController::class, 'deleteAttachment']);
     Route::post('/post/like/{id}', [FeedPostController::class, 'like']);
     Route::post('/post/comment/{id}', [FeedPostController::class, 'comment']);
+    Route::post('/post/comment/like/{comment_id}', [FeedPostController::class, 'commentLike']); // Like/unlike
     Route::post('/post/share/{id}', [FeedPostController::class, 'share']);
 
     Route::get('/post/like/{id}', [FeedPostController::class, 'getLike']);
