@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\FeedPostController;
 use App\Http\Controllers\API\GoalController;
-use App\Http\Controllers\api\SkillsController;
+use App\Http\Controllers\Api\SkillsController;
 use App\Http\Controllers\API\UserProfileController;
 
 /*
