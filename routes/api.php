@@ -5,7 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\FeedPostController;
 use App\Http\Controllers\API\GoalController;
-use App\Http\Controllers\Api\SkillsController;
+use App\Http\Controllers\API\SkillsController;
+use App\Http\Controllers\API\StoreController;
 use App\Http\Controllers\API\UserProfileController;
 
 /*
@@ -91,6 +92,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('/add/attachments/{skill_id}', [SkillsController::class, 'uploadAttachments']);
         Route::post('/remove/attachment/{id}', [SkillsController::class, 'deleteAttachment']);
+    });
+
+    Route::prefix('store')->group(function () {
+        Route::get('/categories', [StoreController::class, 'Categories']);
+        Route::post('/categoryDetails', [StoreController::class, 'categoryDetails']);
+
+        Route::get('/products', [StoreController::class, 'product']);
+        Route::get('/product/{slug}', [StoreController::class, 'producedetails']);
+
     });
 
 });
