@@ -47,7 +47,7 @@ class SkillsController extends Controller
         $user = $request->user();
         $skills = Skills::with(['type', 'attachments'])->where('user_id', $user->id)
             ->when($request->skill_type_id, fn($q) => $q->where('skill_type_id', $request->skill_type_id))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))->latest()
             ->paginate(10);
 
         return response()->json(['status' => true, 'data' => $skills]);
@@ -67,7 +67,7 @@ class SkillsController extends Controller
         $validator = Validator::make($request->all(), [
             'skill_type_id' => 'required|exists:skill_types,id',
             'name' => 'required|string',
-            'status' => 'in:on-going, completed',
+            'status' => 'in:on-going,completed',
             'description' => 'nullable|string',
             'attachments.*' => 'file|mimes:jpg,jpeg,png,mp4,mov,gif|max:10240' // 10MB
         ]);
@@ -110,7 +110,7 @@ class SkillsController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
-            'status' => 'in:on-going, completed',
+            'status' => 'in:on-going,completed',
             'description' => 'nullable|string',
         ]);
 
