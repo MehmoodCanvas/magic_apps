@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\ProductCategories;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
 
 class StoreController extends Controller
 {
@@ -159,14 +161,20 @@ class StoreController extends Controller
 
         // POST /orders
     public function orders(Request $r) {
-        $r->validate([
-            'items'=>'required|array|min:1',
-            'items.*.product_id'=>'required|integer|exists:products,id',
-            'items.*.qty'=>'required|integer|min:1',
-            'billing_address'=>'required|array',
-            'shipping_address'=>'nullable|array',
-            'platform'=>'required|string', // payment platform meta
+
+        $validator = Validator::make($r->all(), [
+            'items'               => 'required|array|min:1',
+            'items.*.product_id'  => 'required|integer|exists:products,id',
+            'items.*.qty'         => 'required|integer|min:1',
+            'billing_address'     => 'required|string',
+            'payment_status'      => 'required|string',
+            //  'platform'            => 'required|string', // payment platform meta
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors(), 'status' => false], 422);
+        }
+
 
         DB ::beginTransaction();
         try {
@@ -201,17 +209,17 @@ class StoreController extends Controller
             $total    = max(0, $subtotal - $discount + $tax + $shipping);
 
             $order = Order::create([
-                'user_id'=>auth()->id(),
-                'status'=>'pending',
-                'subtotal'=>$subtotal,
-                'discount'=>$discount,
-                'tax'=>$tax,
-                'shipping'=>$shipping,
-                'total'=>$total,
-                'currency'=>$r->get('currency','USD'),
-                'payment_status'=>'unpaid',
-                'billing_address'=>$r->billing_address,
-                'shipping_address'=>$r->get('shipping_address', $r->billing_address),
+                'user_id'          =>  auth()->id(),
+                'status'           =>  'pending',
+                'subtotal'         =>  $subtotal,
+                'discount'         =>  $discount,
+                'tax'              =>  $tax,
+                'shipping'         =>  $shipping,
+                'total'            =>  $total,
+                'currency'         =>  $r->get('currency','USD'),
+                'payment_status'   =>  $r->get('payment_status'),
+                'billing_address'  =>  $r->billing_address,
+                'shipping_address' =>  $r->get('shipping_address', $r->billing_address),
             ]);
 
             foreach ($orderItems as $row) {
@@ -219,15 +227,15 @@ class StoreController extends Controller
             }
 
             $order->payments()->create([
-                'platform'=>$r->platform,
-                'transaction_id'=>$r->get('transaction_id'),
-                'amount'=>$total,
-                'status'=>'pending',
-                'meta'=>$r->get('payment_meta', []),
+                'platform'      =>  $r->get('platform', ''),
+                'transaction_id'=>  $r->get('transaction_id', ''),
+                'amount'        =>  $total,
+                'status'        =>  $r->get('payment_status'),
+                'meta'          =>  $r->get('payment_meta', []),
             ]);
 
             DB::commit();
-            return response()->json(['status'=>true,'message'=>'Order created','data'=>$order->load('items','payments')]);
+            return response()->json(['status'=>true,'message'=>'Order created','data'=> $order->load('items','payments')]);
         } catch (\Throwable $e){
             DB::rollBack();
             return response()->json(['status'=>false,'message'=>$e->getMessage()], 422);
@@ -235,20 +243,21 @@ class StoreController extends Controller
     }
 
     // GET /orders (user history)
-    public function index(Request $r) {
-        $q = Order::with('items.product')->where('user_id', auth()->id())->latest();
+    public function orderHistory(Request $r) {
+        $q = Order::with('items','payments')->where('user_id', auth()->id())->latest();
 
         if ($r->filled('status')) $q->where('status',$r->status);
         if ($r->filled('min_total')) $q->where('total','>=',(float)$r->min_total);
         if ($r->filled('max_total')) $q->where('total','<=',(float)$r->max_total);
 
-        return $q->paginate($r->get('per_page',15))->appends($r->query());
+        $data =  $q->paginate($r->get('per_page',15))->appends($r->query());
+        return response()->json(['status'=>true,'message'=>'','data'=> $data]);
     }
 
     // GET /orders/{id}
-    public function show($id) {
-        $order = Order::with(['items.product','payments'])->where('user_id',auth()->id())->findOrFail($id);
-        return $order;
+    public function orderDetails($id) {
+        $order = Order::with(['items.product.images','payments'])->where('user_id',auth()->id())->findOrFail($id);
+        return response()->json(['status'=>true,'message'=>'','data'=> $order]);
     }
 
 

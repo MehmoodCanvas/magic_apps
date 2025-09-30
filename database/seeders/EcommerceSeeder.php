@@ -9,12 +9,60 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductAttribute;
 use App\Models\AttributeValue;
+use App\Models\ConsultationCategories;
 use App\Models\ProductAttributeValue;
 
 class EcommerceSeeder extends Seeder
 {
     public function run(): void
     {
+        // $categories = [
+        //     [
+        //         'name' => 'Medical & Health',
+        //         'description' => 'Medical consultations, health advice, and wellness guidance',
+        //         'icon' => '🏥',
+        //     ],
+        //     [
+        //         'name' => 'Legal Services',
+        //         'description' => 'Legal advice, consultations, and document assistance',
+        //         'icon' => '⚖️',
+        //     ],
+        //     [
+        //         'name' => 'Business & Finance',
+        //         'description' => 'Business consulting, financial planning, and investment advice',
+        //         'icon' => '💼',
+        //     ],
+        //     [
+        //         'name' => 'Technology & IT',
+        //         'description' => 'Tech support, software development, and IT consulting',
+        //         'icon' => '💻',
+        //     ],
+        //     [
+        //         'name' => 'Education & Tutoring',
+        //         'description' => 'Academic tutoring, skill development, and training',
+        //         'icon' => '📚',
+        //     ],
+        //     [
+        //         'name' => 'Marketing & Design',
+        //         'description' => 'Marketing strategies, graphic design, and branding',
+        //         'icon' => '🎨',
+        //     ],
+        //     [
+        //         'name' => 'Career Counseling',
+        //         'description' => 'Career guidance, resume reviews, and job interview prep',
+        //         'icon' => '🎯',
+        //     ],
+        //     [
+        //         'name' => 'Real Estate',
+        //         'description' => 'Property consultation, buying/selling advice',
+        //         'icon' => '🏠',
+        //     ]
+        // ];
+
+        // foreach ($categories as $category) {
+        //     ConsultationCategories::create($category);
+        // }
+
         // // Categories
         // $categories = [
         //     ['name' => 'Notebooks', 'image' => 'http://magic-app.test/public/product-category-icons/cat1.png'],

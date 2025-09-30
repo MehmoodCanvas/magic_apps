@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('platform'); // e.g. stripe, paypal, cod
             $table->string('transaction_id')->nullable();
             $table->decimal('amount', 12, 2);
-            $table->string('status')->default('pending'); // pending, succeeded, failed
+            $table->string('status')->default('unpaid'); // unpaid, succeeded, failed
             $table->json('meta')->nullable();
             $table->timestamps();
         });

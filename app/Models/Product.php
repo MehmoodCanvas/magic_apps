@@ -13,7 +13,7 @@ class Product extends Model
     protected $casts = ['status'=>'boolean'];
 
     public function category(){
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(ProductCategories::class);
     }
 
     public function images(){

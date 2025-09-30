@@ -11,6 +11,14 @@ class Order extends Model
 
     protected $fillable=['user_id','status','subtotal','discount','tax','shipping','total','currency','payment_status','billing_address','shipping_address'];
     protected $casts=['billing_address'=>'array','shipping_address'=>'array'];
-    public function items(){ return $this->hasMany(OrderItem::class); }
-    public function payments(){ return $this->hasMany(OrderPayment::class); }
+
+    public function items()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(OrderPayment::class);
+    }
 }

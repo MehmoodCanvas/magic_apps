@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\API\FeedPostController;
 use App\Http\Controllers\API\GoalController;
 use App\Http\Controllers\API\SkillsController;
@@ -100,7 +101,31 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/products', [StoreController::class, 'product']);
         Route::get('/product/{slug}', [StoreController::class, 'producedetails']);
+        Route::post('/checkout', [StoreController::class, 'orders']);
+        Route::get('/orders/history', [StoreController::class, 'orderHistory']);
+        Route::get('/order/{order_id}', [StoreController::class, 'orderDetails']);
+    });
 
+    Route::prefix('consultation')->group(function () {
+         // Category CRUD if needed
+        Route::get('/categories', [ConsultationController::class,'categoriesList']);
+
+        Route::post('/create', [ConsultationController::class,'CreateConsultations']);
+        Route::post('/update/{id}', [ConsultationController::class,'updateConsultations']);
+        Route::post('/delete/{id}', [ConsultationController::class,'destroyConsultations']);
+
+        Route::get('/', [ConsultationController::class,'allConsultations']);
+        Route::get('/my-consultation', [ConsultationController::class,'myConsultations']);
+        Route::get('/single/{id}', [ConsultationController::class,'singleConsultations']);
+
+        Route::post('/request/{consultationId}', [ConsultationController::class,'StoreConsultationRequest']);
+
+        // Tabs for user
+        Route::get('/send-request', [ConsultationController::class,'myRequests']);
+        Route::get('/received-requests', [ConsultationController::class,'receivedRequests']);
+        Route::get('/single-request/{requestId}', [ConsultationController::class,'singleRequest']);
+
+        Route::post('/update-request/status', [ConsultationController::class,'updateRequest']);
     });
 
 });
