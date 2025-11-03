@@ -6,6 +6,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\API\FeedPostController;
 use App\Http\Controllers\API\GoalController;
+use App\Http\Controllers\APi\IdeaController;
 use App\Http\Controllers\API\SkillsController;
 use App\Http\Controllers\API\StoreController;
 use App\Http\Controllers\API\UserProfileController;
@@ -128,4 +129,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/update-request/status', [ConsultationController::class,'updateRequest']);
     });
 
+
+    Route::prefix('ideas')->group(function () {
+        Route::post('/create', [IdeaController::class, 'store']);
+        Route::post('/update/{id}', [IdeaController::class, 'update']);
+        Route::post('/add/attachments/{idea_id}', [IdeaController::class, 'uploadAttachments']);
+        Route::post('/remove/attachment/{id}', [IdeaController::class, 'deleteAttachment']);
+
+        Route::delete('/delete/{id}', [IdeaController::class, 'destroy']);
+
+        Route::get('/my-ideas', [IdeaController::class, 'myIdeas']);
+        Route::get('/single/{id}', [IdeaController::class, 'singleIdea']);
+        Route::get('/all-ideas', [IdeaController::class, 'allIdeas']);
+    });
+
 });
+
+
+// email=wahjsgffdjur@mailinator.com
+// password=wajur@
+// 196|q7WxDSaQHANin51k41HKpJ0HNXPJeNr2tgn5WiaO625e6138
+// 197|HT68qYm8OedvDIafVqtOp89tvYJS0fiiKFXCIosS7b25a533
