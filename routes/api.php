@@ -6,7 +6,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\ConsultationController;
 use App\Http\Controllers\API\FeedPostController;
 use App\Http\Controllers\API\GoalController;
-use App\Http\Controllers\APi\IdeaController;
+use App\Http\Controllers\API\IdeaController;
 use App\Http\Controllers\API\SkillsController;
 use App\Http\Controllers\API\StoreController;
 use App\Http\Controllers\API\UserProfileController;
