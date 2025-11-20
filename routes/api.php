@@ -136,7 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/add/attachments/{idea_id}', [IdeaController::class, 'uploadAttachments']);
         Route::post('/remove/attachment/{id}', [IdeaController::class, 'deleteAttachment']);
 
-        Route::delete('/delete/{id}', [IdeaController::class, 'destroy']);
+        Route::post('/delete/{id}', [IdeaController::class, 'destroy']);
 
         Route::get('/my-ideas', [IdeaController::class, 'myIdeas']);
         Route::get('/single/{id}', [IdeaController::class, 'singleIdea']);
