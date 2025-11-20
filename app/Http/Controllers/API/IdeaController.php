@@ -8,6 +8,8 @@ use App\Models\IdeaAttachment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
+
 use Illuminate\Support\Facades\Storage;
 
 class IdeaController extends Controller
@@ -15,7 +17,8 @@ class IdeaController extends Controller
     //  Add Idea
     public function store(Request $request)
     {
-        $request->validate([
+
+         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'improvement' => 'nullable|string',
@@ -23,33 +26,42 @@ class IdeaController extends Controller
             'attachments.*' => 'file|mimes:jpg,jpeg,png,gif,mp4,pdf|max:10240'
         ]);
 
-        $user = $request->user();
-        $idea = Idea::create([
-            'user_id' => $user->id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'improvement' => $request->improvement,
-            'benefits' => $request->benefits,
-        ]);
-
-        if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                // $path = $file->store('attachments');
-                $filename = time() . $file->getClientOriginalName();
-                $file->move(public_path('ideas-attachment'), $filename);
-                $path = '/ideas-attachment/'.$filename;
-                $mime = $file->getClientMimeType();
-
-                IdeaAttachment::create([
-                    'idea_id' => $idea->id,
-                    'user_id'   => $user->id,
-                    'file_path' => $path,
-                    'mime_type' => $mime,
-                ]);
-            }
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors(), 'status' => false], 422);
         }
 
-        return response()->json(['status' => true, 'message' => 'Idea created successfully', 'data' => $idea->load('attachments', 'user')]);
+        try {
+            $user = $request->user();
+            $idea = Idea::create([
+                'user_id' => $user->id,
+                'title' => $request->title,
+                'description' => $request->description,
+                'improvement' => $request->improvement,
+                'benefits' => $request->benefits,
+            ]);
+
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    // $path = $file->store('attachments');
+                    $filename = time() . $file->getClientOriginalName();
+                    $file->move(public_path('ideas-attachment'), $filename);
+                    $path = '/ideas-attachment/'.$filename;
+                    $mime = $file->getClientMimeType();
+
+                    IdeaAttachment::create([
+                        'idea_id' => $idea->id,
+                        'user_id'   => $user->id,
+                        'file_path' => $path,
+                        'mime_type' => $mime,
+                    ]);
+                }
+            }
+
+            return response()->json(['status' => true, 'message' => 'Idea created successfully', 'data' => $idea->load('attachments', 'user')]);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     //  Edit Idea
@@ -76,28 +88,37 @@ class IdeaController extends Controller
         $user = $request->user();
         $idea = Idea::where('user_id', $user->id)->findOrFail($idea_id);
 
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'attachments.*' => 'required|file|mimes:jpg,jpeg,png,gif,mp4,pdf|max:10240'
         ]);
 
-        $attachments = [];
-        foreach ($request->file('attachments') as $file) {
-            // $path = $file->store('attachments');
-            $filename = time() . $file->getClientOriginalName();
-            $file->move(public_path('ideas-attachment'), $filename);
-            $path = '/ideas-attachment/'.$filename;
-            $mime = $file->getClientMimeType();
-
-            $attachment = IdeaAttachment::create([
-                'idea_id' => $idea->id,
-                'user_id'   => $user->id,
-                'file_path' => $path,
-                'mime_type' => $mime,
-            ]);
-            $attachments[] = $attachment;
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors(), 'status' => false], 422);
         }
 
-        return response()->json(['status' => true, 'message' => 'Attachments Uploaded Successfully', 'data' => $attachments]);
+        try {
+            $attachments = [];
+            foreach ($request->file('attachments') as $file) {
+                // $path = $file->store('attachments');
+                $filename = time() . $file->getClientOriginalName();
+                $file->move(public_path('ideas-attachment'), $filename);
+                $path = '/ideas-attachment/'.$filename;
+                $mime = $file->getClientMimeType();
+
+                $attachment = IdeaAttachment::create([
+                    'idea_id' => $idea->id,
+                    'user_id'   => $user->id,
+                    'file_path' => $path,
+                    'mime_type' => $mime,
+                ]);
+                $attachments[] = $attachment;
+            }
+
+            return response()->json(['status' => true, 'message' => 'Attachments Uploaded Successfully', 'data' => $attachments]);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     //  Delete Single Attachment
