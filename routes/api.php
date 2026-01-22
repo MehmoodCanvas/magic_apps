@@ -10,6 +10,9 @@ use App\Http\Controllers\API\IdeaController;
 use App\Http\Controllers\API\SkillsController;
 use App\Http\Controllers\API\StoreController;
 use App\Http\Controllers\API\UserProfileController;
+use App\Http\Controllers\API\CoachingSessionController;
+use App\Http\Controllers\API\BookingController;
+use App\Http\Controllers\API\AcademicPlanningController;
 
 /*
 |--------------------------------------------------------------------------
@@ -141,6 +144,36 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/my-ideas', [IdeaController::class, 'myIdeas']);
         Route::get('/single/{id}', [IdeaController::class, 'singleIdea']);
         Route::get('/all-ideas', [IdeaController::class, 'allIdeas']);
+    });
+
+    Route::prefix('coaching-sessions')->group(function () {
+        Route::get('/', [CoachingSessionController::class, 'index']);
+        Route::get('/{id}', [CoachingSessionController::class, 'show']);
+        Route::get('/{id}/slots', [CoachingSessionController::class, 'getSlots']);
+       
+        Route::post('/create', [CoachingSessionController::class, 'store']);
+        Route::post('/update/{id}', [CoachingSessionController::class, 'update']);
+        Route::post('/delete/{id}', [CoachingSessionController::class, 'destroy']);
+    });
+
+    Route::prefix('session-bookings')->group(function () {
+        Route::get('/', [BookingController::class, 'index']);
+        Route::get('/{id}', [BookingController::class, 'getBookings']);
+        Route::post('/create', [BookingController::class, 'store']);
+    });
+
+    Route::prefix('academic-subjects')->group(function () {
+        Route::get('/', [AcademicPlanningController::class, 'allSubjects']);
+    });
+
+    Route::prefix('academic-plannings')->group(function () {
+        Route::get('/', [AcademicPlanningController::class, 'index']);
+        Route::get('/{id}', [AcademicPlanningController::class, 'show']);
+        Route::post('/create', [AcademicPlanningController::class, 'store']);
+        Route::post('/update/{id}', [AcademicPlanningController::class, 'update']);
+        Route::post('/delete/{id}', [AcademicPlanningController::class, 'destroy']);
+        Route::post('/add/attachments/{id}', [AcademicPlanningController::class, 'uploadAttachments']);
+        Route::post('/remove/attachment/{id}', [AcademicPlanningController::class, 'deleteAttachment']);
     });
 
 });

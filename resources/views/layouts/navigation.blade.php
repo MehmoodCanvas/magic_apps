@@ -15,6 +15,18 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('admin.coaching-sessions.index')" :active="request()->routeIs('admin.coaching-sessions.*')">
+                        {{ __('Coaching Sessions') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.coaching-sessions.create')" :active="request()->routeIs('admin.coaching-sessions.create')">
+                        {{ __('Create Session') }}
+                    </x-nav-link>
+                    {{-- <x-nav-link :href="route('admin.bookings.index')" :active="request()->routeIs('admin.bookings.*')">
+                        {{ __('Bookings') }}
+                    </x-nav-link> --}}
+                    <x-nav-link :href="route('admin.academic-subjects.index')" :active="request()->routeIs('admin.academic-subjects.*')">
+                        {{ __('Academic Subjects') }}
+                    </x-nav-link>
                 </div>
             </div>
 

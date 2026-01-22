@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('coaching_sessions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->text('short_description');
+            $table->longText('long_description');
+            $table->string('image');
+            $table->string('video')->nullable();
+            $table->time('start_time');
+            $table->time('end_time');
+            $table->integer('duration'); // in minutes
+            $table->string('meeting_link');
+            $table->json('available_days');
+            $table->decimal('price', 10, 2);
+            $table->string('status')->default('active');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('coaching_sessions');
+    }
+};
