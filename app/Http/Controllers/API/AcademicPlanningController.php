@@ -77,13 +77,22 @@ class AcademicPlanningController extends Controller
     }
 
     // User's Plannings
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $plannings = AcademicPlanning::with('attachments', 'subject')
-                ->where('user_id', Auth::id())
-                ->latest()
-                ->paginate(20);
+            $query = AcademicPlanning::with('attachments', 'subject')
+                ->where('user_id', Auth::id());
+
+            // Filter: trophies = only trophy awarded, normal = only non-trophy
+            if ($request->filled('filter')) {
+                if ($request->filter === 'trophies') {
+                    $query->where('has_trophy', true);
+                } else{
+                    $query->where('has_trophy', false);
+                }
+            }
+
+            $plannings = $query->latest()->paginate(20);
             return response()->json(['status' => true, 'data' => $plannings]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);

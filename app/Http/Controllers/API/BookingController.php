@@ -129,4 +129,43 @@ class BookingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get all bookings received on sessions created by the current user.
+     */
+    public function mySessionBookings(Request $request)
+    {
+        try {
+            // Get IDs of sessions created by the current user
+            $mySessionIds = CoachingSession::where('user_id', auth()->id())->pluck('id');
+
+            $query = SessionBooking::with('coachingSession', 'user')
+                ->whereIn('coaching_session_id', $mySessionIds);
+
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->where(function($q) use ($search) {
+                    $q->whereHas('user', function($uq) use ($search) {
+                        $uq->where('first_name', 'LIKE', "%$search%")
+                           ->orWhere('last_name', 'LIKE', "%$search%");
+                    })
+                    ->orWhereHas('coachingSession', function($sq) use ($search) {
+                        $sq->where('title', 'LIKE', "%$search%");
+                    });
+                });
+            }
+
+            $bookings = $query->latest()->paginate(20);
+
+            return response()->json([
+                'status' => true,
+                'data' => $bookings
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

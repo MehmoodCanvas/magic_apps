@@ -27,6 +27,12 @@
                     <x-nav-link :href="route('admin.academic-subjects.index')" :active="request()->routeIs('admin.academic-subjects.*')">
                         {{ __('Academic Subjects') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('admin.badges.index')" :active="request()->routeIs('admin.badges.*')">
+                        {{ __('Badges') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.academic-plannings.index')" :active="request()->routeIs('admin.academic-plannings.*')">
+                        {{ __('Academic Plannings') }}
+                    </x-nav-link>
                 </div>
             </div>
 

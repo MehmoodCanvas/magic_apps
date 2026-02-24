@@ -14,6 +14,7 @@ class AcademicPlanning extends Model
         'academic_subject_id',
         'status',
         'description',
+        'has_trophy',
     ];
 
     public function user()

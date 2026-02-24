@@ -150,7 +150,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [CoachingSessionController::class, 'index']);
         Route::get('/{id}', [CoachingSessionController::class, 'show']);
         Route::get('/{id}/slots', [CoachingSessionController::class, 'getSlots']);
-       
+    });
+
+    Route::prefix('my-coaching-sessions')->group(function () {
+        Route::get('/', [CoachingSessionController::class, 'mySessions']);
+        Route::get('/bookings', [BookingController::class, 'mySessionBookings']);
         Route::post('/create', [CoachingSessionController::class, 'store']);
         Route::post('/update/{id}', [CoachingSessionController::class, 'update']);
         Route::post('/delete/{id}', [CoachingSessionController::class, 'destroy']);
@@ -175,6 +179,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/add/attachments/{id}', [AcademicPlanningController::class, 'uploadAttachments']);
         Route::post('/remove/attachment/{id}', [AcademicPlanningController::class, 'deleteAttachment']);
     });
+
+    // Admin Badge Management Routes
+    // (Removed - Migrating to Web UI)
+
+    // User Badge Progress Route
+    Route::get('/badges-progress', [\App\Http\Controllers\API\BadgeController::class, 'userBadges']);
+
+    // User Achievements Summary (Trophies + Badges)
+    Route::get('/achievements', [\App\Http\Controllers\API\BadgeController::class, 'userAchievements']);
 
 });
 

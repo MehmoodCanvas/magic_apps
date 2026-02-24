@@ -31,6 +31,10 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('coaching-sessions', \App\Http\Controllers\Admin\CoachingSessionController::class);
         Route::resource('academic-subjects', \App\Http\Controllers\Admin\AcademicSubjectController::class);
+        Route::resource('badges', \App\Http\Controllers\Admin\BadgeController::class);
+
+        Route::get('academic-plannings', [\App\Http\Controllers\Admin\AcademicPlanningController::class, 'index'])->name('academic-plannings.index');
+        Route::post('academic-plannings/{id}/toggle-trophy', [\App\Http\Controllers\Admin\AcademicPlanningController::class, 'toggleTrophy'])->name('academic-plannings.toggle-trophy');
     });
 });
 

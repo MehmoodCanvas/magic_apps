@@ -71,14 +71,33 @@ class CoachingSessionController extends Controller
         }
     }
 
+    
+    public function mySessions()
+    {
+        try {
+            $sessions = CoachingSession::with('user')->where('user_id', auth()->id())->latest()->paginate(20);
+
+            return response()->json([
+                'status' => true,
+                'data' => $sessions
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255',
                 'short_description' => 'required|string',
-                'long_description' => 'required|string',
+                'long_description' => 'nullable|string',
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'video' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:20480',
                 'start_time' => 'required',
                 'end_time' => 'required',
                 'duration' => 'required|integer',
@@ -208,17 +227,17 @@ class CoachingSessionController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'title' => 'nullable|string|max:255',
-                'short_description' => 'nullable|string',
+                'title' => 'required|string|max:255',
+                'short_description' => 'required|string',
                 'long_description' => 'nullable|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                'video' => 'nullable|mimes:mp4,mov,avi|max:20000',
-                'start_time' => 'nullable',
-                'end_time' => 'nullable',
-                'duration' => 'nullable|integer',
-                'meeting_link' => 'nullable|url',
-                'available_days' => 'nullable|array',
-                'price' => 'nullable|numeric',
+                'video' => 'nullable|file|mimes:mp4,mov,avi,wmv|max:20480',
+                'start_time' => 'required',
+                'end_time' => 'required',
+                'duration' => 'required|integer',
+                'meeting_link' => 'required|url',
+                'available_days' => 'required|array',
+                'price' => 'required|numeric',
             ]);
 
             if ($validator->fails()) {
