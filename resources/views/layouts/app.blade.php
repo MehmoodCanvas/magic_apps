@@ -12,6 +12,12 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
+        <link rel="preload" as="style" href="http://magic-app.test/build/assets/app-Bp7TMlvl.css">
+        <link rel="modulepreload" href="http://magic-app.test/build/assets/app-DaBYqt0m.js">
+        <link rel="stylesheet" href="http://magic-app.test/build/assets/app-Bp7TMlvl.css">
+        <script type="module" src="http://magic-app.test/build/assets/app-DaBYqt0m.js"></script> 
+
+        <!-- Scripts -->
         {{-- @vite(['resources/css/app.css', 'resources/js/app.js']) --}}
     </head>
     <body class="font-sans antialiased">
