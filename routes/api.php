@@ -13,6 +13,7 @@ use App\Http\Controllers\API\UserProfileController;
 use App\Http\Controllers\API\CoachingSessionController;
 use App\Http\Controllers\API\BookingController;
 use App\Http\Controllers\API\AcademicPlanningController;
+use App\Http\Controllers\API\ThawaniTestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -108,6 +109,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/checkout', [StoreController::class, 'orders']);
         Route::get('/orders/history', [StoreController::class, 'orderHistory']);
         Route::get('/order/{order_id}', [StoreController::class, 'orderDetails']);
+
+        // Mobile app calls this after closing WebView to get verified status (needs auth)
+        Route::get('/payment/verify/{order_id}', [StoreController::class, 'verifyPayment']);
     });
 
     Route::prefix('consultation')->group(function () {
@@ -189,8 +193,22 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Achievements Summary (Trophies + Badges)
     Route::get('/achievements', [\App\Http\Controllers\API\BadgeController::class, 'userAchievements']);
 
+    // Thawani Test Routes
+    
 });
 
+Route::prefix('thawani-test')->group(function () {
+    Route::get('/debug', [ThawaniTestController::class, 'debugCheck']);
+    Route::get('/checkout', [ThawaniTestController::class, 'testCheckout'])->name('thawani.checkout');
+    Route::get('/success', [ThawaniTestController::class, 'success'])->name('thawani.success');
+    Route::get('/cancel', [ThawaniTestController::class, 'cancel'])->name('thawani.cancel');
+});
+
+// Thawani payment callbacks (outside auth - Thawani redirects browser here without token)
+Route::prefix('store/payment')->group(function () {
+    Route::get('/success', [StoreController::class, 'paymentSuccess']);
+    Route::get('/cancel', [StoreController::class, 'paymentCancel']);
+});
 
 // email=wahjsgffdjur@mailinator.com
 // password=wajur@

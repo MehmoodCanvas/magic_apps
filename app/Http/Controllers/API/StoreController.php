@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductCategories;
+use App\Services\ThawaniService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -159,7 +160,11 @@ class StoreController extends Controller
         }
     }
 
-        // POST /orders
+    /**
+     * POST /store/checkout
+     * Creates order + initiates Thawani payment session.
+     * Returns redirect_url for Thawani hosted payment page.
+     */
     public function orders(Request $r) {
 
         $validator = Validator::make($r->all(), [
@@ -167,22 +172,20 @@ class StoreController extends Controller
             'items.*.product_id'  => 'required|integer|exists:products,id',
             'items.*.qty'         => 'required|integer|min:1',
             'billing_address'     => 'required|string',
-            'payment_status'      => 'required|string',
-            //  'platform'            => 'required|string', // payment platform meta
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors(), 'status' => false], 422);
         }
 
-
-        DB ::beginTransaction();
+        DB::beginTransaction();
         try {
             $items = $r->items;
             $products = Product::whereIn('id', collect($items)->pluck('product_id'))->get()->keyBy('id');
 
             $subtotal = 0;
             $orderItems = [];
+            $thawaniProducts = [];
 
             foreach ($items as $it){
                 $p = $products[$it['product_id']];
@@ -197,6 +200,13 @@ class StoreController extends Controller
                     'price'=>$price,
                     'qty'=>$it['qty'],
                     'total'=>$line,
+                ];
+
+                // Thawani expects unit_amount in baisa (1 OMR = 1000 baisa)
+                $thawaniProducts[] = [
+                    'name' => $p->name,
+                    'quantity' => (int)$it['qty'],
+                    'unit_amount' => (int)($price * 1000), // Convert OMR to baisa
                 ];
 
                 // reduce stock
@@ -216,8 +226,8 @@ class StoreController extends Controller
                 'tax'              =>  $tax,
                 'shipping'         =>  $shipping,
                 'total'            =>  $total,
-                'currency'         =>  $r->get('currency','USD'),
-                'payment_status'   =>  $r->get('payment_status'),
+                'currency'         =>  'OMR',
+                'payment_status'   =>  'unpaid',
                 'billing_address'  =>  $r->billing_address,
                 'shipping_address' =>  $r->get('shipping_address', $r->billing_address),
             ]);
@@ -226,20 +236,190 @@ class StoreController extends Controller
                 $order->items()->create($row);
             }
 
+            // Create Thawani checkout session
+            $thawaniService = new ThawaniService();
+            $thawaniResult = $thawaniService->createCheckoutSession([
+                'client_reference_id' => 'order-' . $order->id,
+                'products' => $thawaniProducts,
+                'success_url' => url('/api/store/payment/success?order_id=' . $order->id),
+                'cancel_url' => url('/api/store/payment/cancel?order_id=' . $order->id),
+                'metadata' => [
+                    'order_id' => (string)$order->id,
+                    'user_id' => (string)auth()->id(),
+                ],
+            ]);
+
+            if (!$thawaniResult['status']) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment session creation failed: ' . ($thawaniResult['message'] ?? 'Unknown error'),
+                ], 400);
+            }
+
+            // Save Thawani session info in payment record
             $order->payments()->create([
-                'platform'      =>  $r->get('platform', ''),
-                'transaction_id'=>  $r->get('transaction_id', ''),
-                'amount'        =>  $total,
-                'status'        =>  $r->get('payment_status'),
-                'meta'          =>  $r->get('payment_meta', []),
+                'platform'       => 'thawani',
+                'transaction_id' => $thawaniResult['session_id'],
+                'amount'         => $total,
+                'status'         => 'unpaid',
+                'meta'           => [
+                    'thawani_session_id' => $thawaniResult['session_id'],
+                    'redirect_url' => $thawaniResult['redirect_url'],
+                ],
             ]);
 
             DB::commit();
-            return response()->json(['status'=>true,'message'=>'Order created','data'=> $order->load('items','payments')]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Order created. Redirect to payment.',
+                'data' => [
+                    'order_id' => $order->id,
+                    'thawani_session_id' => $thawaniResult['session_id'],
+                    'redirect_url' => $thawaniResult['redirect_url'],
+                ],
+            ]);
+
         } catch (\Throwable $e){
             DB::rollBack();
             return response()->json(['status'=>false,'message'=>$e->getMessage()], 422);
         }
+    }
+
+    /**
+     * GET /store/payment/success
+     * Thawani redirects here after successful payment.
+     * Returns HTML that the mobile WebView can detect via URL scheme.
+     *
+     * Mobile app WebView should intercept URLs starting with "magicapp://".
+     * When detected: close the WebView and call /store/payment/verify/{order_id}
+     */
+    public function paymentSuccess(Request $request)
+    {
+        $orderId = $request->query('order_id');
+
+        if (!$orderId) {
+            return response('<h1>Error: Order ID missing</h1>', 400);
+        }
+
+        $order = Order::with('payments')->find($orderId);
+
+        if ($order) {
+            // Verify & update payment status immediately
+            $payment = $order->payments()->where('platform', 'thawani')->first();
+            if ($payment && $payment->meta) {
+                $meta = is_array($payment->meta) ? $payment->meta : json_decode($payment->meta, true);
+                $sessionId = $meta['thawani_session_id'] ?? null;
+
+                if ($sessionId) {
+                    $thawaniService = new ThawaniService();
+                    $result = $thawaniService->getSession($sessionId);
+
+                    if ($result['status'] && isset($result['data']['payment_status']) && $result['data']['payment_status'] === 'paid') {
+                        $order->update(['payment_status' => 'paid', 'status' => 'confirmed']);
+                        $payment->update(['status' => 'paid']);
+                    } else {
+                        $order->update(['payment_status' => 'pending_verification']);
+                    }
+                }
+            }
+        }
+
+        // Return HTML page with deep link for mobile app
+        // The WebView intercepts "magicapp://payment/success?order_id=X" and closes itself
+        return response()->view('payments.thawani-redirect', [
+            'status' => 'success',
+            'order_id' => $orderId,
+            'message' => 'Payment Successful!',
+            'deep_link' => 'magicapp://payment/success?order_id=' . $orderId,
+        ]);
+    }
+
+    /**
+     * GET /store/payment/cancel
+     * Thawani redirects here when user cancels payment.
+     */
+    public function paymentCancel(Request $request)
+    {
+        $orderId = $request->query('order_id');
+
+        if ($orderId) {
+            $order = Order::with('items')->find($orderId);
+            if ($order && $order->payment_status !== 'paid') {
+                $order->update([
+                    'payment_status' => 'cancelled',
+                    'status' => 'cancelled',
+                ]);
+
+                // Restore stock
+                foreach ($order->items as $item) {
+                    Product::where('id', $item->product_id)->increment('stock', $item->qty);
+                }
+
+                $order->payments()->where('platform', 'thawani')->update(['status' => 'cancelled']);
+            }
+        }
+
+        return response()->view('payments.thawani-redirect', [
+            'status' => 'cancelled',
+            'order_id' => $orderId,
+            'message' => 'Payment Cancelled',
+            'deep_link' => 'magicapp://payment/cancel?order_id=' . $orderId,
+        ]);
+    }
+
+    /**
+     * GET /store/payment/verify/{order_id}
+     * Mobile app calls this API AFTER closing the WebView to get order + payment status.
+     */
+    public function verifyPayment($orderId)
+    {
+        $order = Order::with('items', 'payments')
+            ->where('user_id', auth()->id())
+            ->find($orderId);
+
+        if (!$order) {
+            return response()->json(['status' => false, 'message' => 'Order not found.'], 404);
+        }
+
+        // If still not verified, try verifying with Thawani again
+        if (!in_array($order->payment_status, ['paid', 'cancelled'])) {
+            $payment = $order->payments()->where('platform', 'thawani')->first();
+            if ($payment && $payment->meta) {
+                $meta = is_array($payment->meta) ? $payment->meta : json_decode($payment->meta, true);
+                $sessionId = $meta['thawani_session_id'] ?? null;
+
+                if ($sessionId) {
+                    $thawaniService = new ThawaniService();
+                    $result = $thawaniService->getSession($sessionId);
+
+                    if ($result['status'] && isset($result['data']['payment_status'])) {
+                        $thawaniStatus = $result['data']['payment_status'];
+
+                        if ($thawaniStatus === 'paid') {
+                            $order->update(['payment_status' => 'paid', 'status' => 'confirmed']);
+                            $payment->update(['status' => 'paid']);
+                        } elseif ($thawaniStatus === 'cancelled') {
+                            $order->update(['payment_status' => 'cancelled', 'status' => 'cancelled']);
+                            $payment->update(['status' => 'cancelled']);
+                            // Restore stock
+                            foreach ($order->items as $item) {
+                                Product::where('id', $item->product_id)->increment('stock', $item->qty);
+                            }
+                        }
+
+                        $order->refresh();
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Order payment status: ' . $order->payment_status,
+            'data' => $order->load('items', 'payments'),
+        ]);
     }
 
     // GET /orders (user history)

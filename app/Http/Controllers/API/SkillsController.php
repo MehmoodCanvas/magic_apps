@@ -82,7 +82,7 @@ class SkillsController extends Controller
 
         $skill = Skills::create($data);
 
-         // ✅ Upload & Save Attachments
+        // ✅ Upload & Save Attachments
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
                 // $path = $file->store('attachments');
@@ -99,6 +99,9 @@ class SkillsController extends Controller
                 ]);
             }
         }
+
+        // ✅ Auto-post to Feed
+        \App\Services\AutoPostService::createSkillPost($user, $skill);
 
         return response()->json(['status' => true, 'message' => 'Skill Created Successfully', 'data' => $skill->load('type','attachments')]);
     }

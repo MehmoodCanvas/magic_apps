@@ -31,4 +31,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'thawani' => [
+        'secret_key' => env('THAWANI_SECRET_KEY'),
+        'publishable_key' => env('THAWANI_PUBLISHABLE_KEY'),
+        'mode' => env('THAWANI_MODE', 'test'),
+        'base_url' => env('THAWANI_MODE', 'test') === 'live' ? 'https://checkout.thawani.om/api/v1' : 'https://uatcheckout.thawani.om/api/v1',
+        'checkout_url' => env('THAWANI_MODE', 'test') === 'live' ? 'https://checkout.thawani.om/pay' : 'https://uatcheckout.thawani.om/pay',
+    ],
+
 ];

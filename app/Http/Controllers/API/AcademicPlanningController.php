@@ -65,6 +65,9 @@ class AcademicPlanningController extends Controller
                 }
             }
 
+            // ✅ Auto-post to Feed
+            \App\Services\AutoPostService::createAcademicPlanningPost($user, $planning);
+
             return response()->json([
                 'status' => true, 
                 'message' => 'Academic Planning created successfully', 
