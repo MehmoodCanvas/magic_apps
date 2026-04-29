@@ -332,7 +332,7 @@ class StoreController extends Controller
             'status' => 'success',
             'order_id' => $orderId,
             'message' => 'Payment Successful!',
-            'deep_link' => url().'/payment/success?order_id=' . $orderId,
+            'deep_link' => url('/payment/success?order_id=' . $orderId),
         ]);
     }
 
@@ -365,7 +365,7 @@ class StoreController extends Controller
             'status' => 'cancelled',
             'order_id' => $orderId,
             'message' => 'Payment Cancelled',
-            'deep_link' => url().'/payment/cancel?order_id=' . $orderId,
+            'deep_link' => url('/payment/cancel?order_id=' . $orderId),
         ]);
     }
 
