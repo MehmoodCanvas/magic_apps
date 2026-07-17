@@ -12,7 +12,8 @@ class UserProfile extends Model
      protected $fillable = [
         'user_id', 'gender', 'born_date',
         'country_id', 'qualification_id', 'employment_status_id',
-        'preferred_work_style_id', 'category_id', 'sub_category_id'
+        'preferred_work_style_id', 'category_id', 'sub_category_id',
+        'bio', 'resume', 'profile_picture'
     ];
 
     public function user() {

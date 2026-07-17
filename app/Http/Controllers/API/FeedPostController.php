@@ -18,29 +18,34 @@ class FeedPostController extends Controller
     public function allPost()
     {
         try {
-            // $posts = FeedPost::where('is_published', 1)->with(['user', 'attachments', 'sharedPosts.user', 'sharedPosts.attachments'])
-            // ->withCount(['likes', 'comments', 'shares',]) // 👈 only count
-            // ->latest()
-            // ->paginate(10); // 👈 10 per page (adjust as needed)
-
-            // // Add 'is_liked' for each post
-            // $posts->getCollection()->transform(function ($post) {
-            //     $post->append('is_liked');
-            //     return $post;
-            // });
-
             $userId = auth()->id();
-            $posts = FeedPost::select('feed_posts.*')
-                ->with(['user', 'attachments', 'sharedPosts.user', 'sharedPosts.attachments'])
+
+            // Fetch IDs of users blocked by current user or who blocked current user
+            $blockedUserIds = \App\Models\UserBlock::where('user_id', $userId)->pluck('blocked_id')
+                ->concat(\App\Models\UserBlock::where('blocked_id', $userId)->pluck('user_id'))
+                ->unique()
+                ->toArray();
+
+            $query = FeedPost::select('feed_posts.*')
+                ->with(['user.profile', 'attachments', 'sharedPosts.user.profile', 'sharedPosts.attachments'])
                 ->withCount(['likes', 'comments', 'shares'])
                 ->leftJoin('post_likes as pl', function ($join) use ($userId) {
                     $join->on('feed_posts.id', '=', 'pl.post_id')
                         ->where('pl.user_id', '=', $userId);
                 })
+                ->leftJoin('follows as f', function ($join) use ($userId) {
+                    $join->on('feed_posts.user_id', '=', 'f.following_id')
+                        ->where('f.follower_id', '=', $userId);
+                })
                 ->addSelect(DB::raw('IF(pl.id IS NULL, false, true) as is_user_liked'))
-                ->where('feed_posts.is_published', 1)
-                ->orderByDesc('feed_posts.created_at')
-                ->paginate(10);
+                ->addSelect(DB::raw('IF(f.id IS NULL, false, true) as is_following_author'))
+                ->where('feed_posts.is_published', 1);
+
+            if (!empty($blockedUserIds)) {
+                $query->whereNotIn('feed_posts.user_id', $blockedUserIds);
+            }
+
+            $posts = $query->orderByDesc('feed_posts.created_at')->paginate(10);
 
             return response()->json([
                 'message' => '',

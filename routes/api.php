@@ -14,6 +14,9 @@ use App\Http\Controllers\API\CoachingSessionController;
 use App\Http\Controllers\API\BookingController;
 use App\Http\Controllers\API\AcademicPlanningController;
 use App\Http\Controllers\API\ThawaniTestController;
+use App\Http\Controllers\API\GrowthRoadmapController;
+use App\Http\Controllers\API\StoryController;
+use App\Http\Controllers\API\UserConnectionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +50,9 @@ Route::post('/verify-reset-password', [AuthController::class, 'verifyAndReset'])
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/user/profile', [UserProfileController::class, 'update']);
+    Route::post('/user/profile-picture', [UserProfileController::class, 'updateProfilePicture']);
+    Route::post('/user/profile-picture/delete', [UserProfileController::class, 'deleteProfilePicture']);
+    Route::get('/user/search', [UserProfileController::class, 'searchUsers']);
     Route::post('/reset-password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -56,6 +62,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/work-style', [UserProfileController::class, 'workStyles']);
     Route::get('/categories', [UserProfileController::class, 'categories']);
     Route::get('/sub-categories', [UserProfileController::class, 'subCategories']);
+
+    // Connection system
+    Route::post('/user/connect/{id}', [UserConnectionController::class, 'sendRequest']);
+    Route::post('/user/connect/accept/{id}', [UserConnectionController::class, 'acceptRequest']);
+    Route::post('/user/connect/reject/{id}', [UserConnectionController::class, 'rejectRequest']);
+    Route::post('/user/connect/unconnect/{id}', [UserConnectionController::class, 'unconnect']);
+    Route::get('/user/connections', [UserConnectionController::class, 'myConnections']);
+    Route::get('/user/connect/requests', [UserConnectionController::class, 'pendingRequests']);
+
+    // Block & Report
+    Route::post('/user/block/{id}', [UserConnectionController::class, 'blockUser']);
+    Route::post('/user/unblock/{id}', [UserConnectionController::class, 'unblockUser']);
+    Route::post('/user/report/{id}', [UserConnectionController::class, 'reportUser']);
+
+    // Follows & Profile Details
+    Route::post('/user/follow/{id}', [UserConnectionController::class, 'followUser']);
+    Route::post('/user/unfollow/{id}', [UserConnectionController::class, 'unfollowUser']);
+    Route::get('/user/profile/{id}', [UserConnectionController::class, 'getProfileDetails']);
+
+    // Growth Roadmap
+    Route::get('/growth-roadmap', [GrowthRoadmapController::class, 'index']);
 
     Route::get('/posts', [FeedPostController::class, 'allPost']);
     Route::get('/user/posts', [FeedPostController::class, 'userPost']);
@@ -77,6 +104,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/post/like/{id}', [FeedPostController::class, 'getLike']);
     Route::get('/post/comment/{id}', [FeedPostController::class, 'getComment']);
     Route::get('/post/share/{id}', [FeedPostController::class, 'share']);
+
+    // Stories
+    Route::get('/stories', [StoryController::class, 'index']);
+    Route::post('story/create', [StoryController::class, 'store']);
+    Route::post('story/update/{id}', [StoryController::class, 'update']);
+    Route::post('story/delete/{id}', [StoryController::class, 'destroy']);
+    Route::post('story/delete-attachment/{id}', [StoryController::class, 'deleteAttachment']);
 
 
     Route::get('/goals', [GoalController::class, 'index']);

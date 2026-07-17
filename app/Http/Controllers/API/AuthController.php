@@ -127,17 +127,19 @@ class AuthController extends Controller
     {
         try{
             $user = $request->user();
+            $profile = $user->profile ? $user->profile->load([
+                'country',
+                'qualification',
+                'employmentStatus',
+                'preferredWorkStyle',
+                'category',
+                'subCategory'
+            ]) : null;
+
             return response()->json([
                 'status' => true,
                 'user' => $user,
-                'profile' => $user->profile->load([
-                    'country',
-                    'qualification',
-                    'employmentStatus',
-                    'preferredWorkStyle',
-                    'category',
-                    'subCategory'
-                ])
+                'profile' => $profile
             ]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
@@ -154,56 +156,67 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors(), 'status' => false], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        try {
+            $user = User::where('email', $request->email)->first();
 
-        if ($user->otp_requested_at && now()->diffInSeconds($user->otp_requested_at) < 60) {
-            return response()->json(['message' => 'Please wait 60 second before requesting another OTP.']);
+            if ($user->otp_expires_at && Carbon::now()->diffInSeconds($user->otp_expires_at) > 540) {
+                return response()->json(['status' => false, 'error' => ['Please wait 60 second before requesting another OTP.']]);
+            }
+
+            $code = rand(100000, 999999); // Or Str::random(6)
+            $user->otp = $code;
+            $user->otp_expires_at = Carbon::now()->addMinutes(10);
+            $user->save();
+
+            Mail::send('emails.otp', ['otp' => $code, 'user' => $user], function ($message) use ($user) {
+                $message->to($user->email);
+                $message->subject('Your OTP Code');
+            });
+
+            return response()->json([
+                'otp_for_testing' => $code,
+                'status' => true,
+                'message' => 'OTP sent to your email.',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'errors' => [$e->getMessage()], 'otp_for_testing' => $code ?? null], 500);
         }
-
-        $code = rand(100000, 999999); // Or Str::random(6)
-        $user->reset_code = $code;
-        $user->code_expires_at = Carbon::now()->addMinutes(10);
-        $user->save();
-
-        // Mail::to($user->email)->send(new OtpMail($code, $user->name));
-        Mail::send('emails.otp', ['otp' => $code, 'user' => $user], function ($message) use ($user) {
-            $message->to($user->email);
-            $message->subject('Your OTP Code');
-        });
-
-        return response()->json([
-            'status' => true,
-            'message' => 'OTP sent to your email.',
-        ]);
     }
+
+
 
     public function verifyAndReset(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'email' => 'required|email|exists:users,email',
             'otp' => 'required|string',
             'password' => 'required|min:6|confirmed',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors(), 'status' => false], 422);
+            return response()->json(['errors' => [$validator->errors()], 'status' => false], 422);
         }
 
-        $user = User::where('email', $request->email)->first();
+        try {
+            $user = User::where('email', $request->email)->first();
 
-        if (
-            !$user ||
-            $user->otp !== $request->otp ||
-            Carbon::now()->gt($user->otp_expires_at)
-        ) {
-            return response()->json(['status' => false, 'message' => 'Invalid or expired OTP.'], 422);
+            if (
+                !$user ||
+                $user->otp !== $request->otp ||
+                Carbon::now()->gt($user->otp_expires_at)
+            ) {
+                return response()->json(['status' => false, 'error' => ['Invalid or expired OTP.']], 422);
+            }
+
+            $user->password = Hash::make($request->password);
+            $user->otp = null;
+            $user->otp_expires_at = null;
+            $user->save();
+
+            return response()->json(['status' => true, 'message' => 'Password reset successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'errors' => [$e->getMessage()]], 500);
         }
-
-        $user->password = bcrypt($request->password);
-        $user->otp = null;
-        $user->otp_expires_at = null;
-        $user->save();
-
-        return response()->json(['status' => true, 'message' => 'Password reset successfully.']);
     }
 }
