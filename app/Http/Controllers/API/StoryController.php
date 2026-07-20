@@ -6,24 +6,67 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Story;
 use App\Models\StoryAttachment;
+use App\Models\Connection;
+use App\Models\UserBlock;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 
 class StoryController extends Controller
 {
-    // Fetch all active stories
-    public function index()
+    // Fetch active stories from connected users + own stories
+    public function index(Request $request)
     {
         try {
-            $stories = Story::with(['user:id,first_name,last_name,email', 'attachments'])
+            $userId = $request->user()->id;
+
+            // Single query: extract connected user IDs without hydrating models
+            $connectedUserIds = Connection::where('status', 'accepted')
+                ->where(function ($q) use ($userId) {
+                    $q->where('sender_id', $userId)
+                      ->orWhere('receiver_id', $userId);
+                })
+                ->selectRaw("CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as connected_id", [$userId])
+                ->pluck('connected_id')
+                ->toArray();
+
+            // Single query: blocked in either direction
+            $excludeIds = UserBlock::where('user_id', $userId)
+                ->orWhere('blocked_id', $userId)
+                ->get()
+                ->flatMap(fn ($block) => $block->user_id === $userId
+                    ? [$block->blocked_id]
+                    : [$block->user_id])
+                ->unique()
+                ->toArray();
+
+            // Allowed = self + connected - blocked
+            $allowedIds = array_diff(
+                array_merge([$userId], $connectedUserIds),
+                $excludeIds
+            );
+
+            $stories = Story::with([
+                    'user:id,first_name,last_name,email',
+                    'user.profile:id,user_id,profile_picture',
+                    'attachments',
+                ])
+                ->whereIn('user_id', $allowedIds)
                 ->where('expires_at', '>', Carbon::now())
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->get()
+                ->groupBy('user_id')
+                ->map(function ($userStories) {
+                    return [
+                        'user'    => $userStories->first()->user,
+                        'stories' => $userStories->values(),
+                    ];
+                })
+                ->values();
 
             return response()->json([
                 'status' => true,
-                'data' => $stories
+                'data'   => $stories,
             ]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);

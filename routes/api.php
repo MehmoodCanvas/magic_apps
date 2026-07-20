@@ -17,6 +17,7 @@ use App\Http\Controllers\API\ThawaniTestController;
 use App\Http\Controllers\API\GrowthRoadmapController;
 use App\Http\Controllers\API\StoryController;
 use App\Http\Controllers\API\UserConnectionController;
+use App\Http\Controllers\API\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +81,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/follow/{id}', [UserConnectionController::class, 'followUser']);
     Route::post('/user/unfollow/{id}', [UserConnectionController::class, 'unfollowUser']);
     Route::get('/user/profile/{id}', [UserConnectionController::class, 'getProfileDetails']);
+
+    // Chat & Group Management System
+    Route::post('/chat/send', [ChatController::class, 'sendMessage']);
+    Route::get('/chat/list', [ChatController::class, 'getChatList']);
+    Route::get('/chat/direct/{userId}', [ChatController::class, 'openDirectChat']);
+    Route::post('/chat/group/create', [ChatController::class, 'createGroup']);
+    Route::get('/chat/conversation/{conversationId}', [ChatController::class, 'getMessages']);
+    Route::post('/chat/group/{conversationId}/update', [ChatController::class, 'updateGroup']);
+    Route::post('/chat/group/{conversationId}/members/add', [ChatController::class, 'addMembers']);
+    Route::post('/chat/group/{conversationId}/members/remove', [ChatController::class, 'removeMembers']);
 
     // Growth Roadmap
     Route::get('/growth-roadmap', [GrowthRoadmapController::class, 'index']);

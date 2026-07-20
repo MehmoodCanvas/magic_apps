@@ -154,4 +154,10 @@ class User extends Authenticatable
     {
         return $this->followers()->where('follower_id', $userId)->exists();
     }
+
+    // Conversations this user is part of
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_members', 'user_id', 'conversation_id')->withTimestamps();
+    }
 }
