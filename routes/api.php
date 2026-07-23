@@ -80,6 +80,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Follows & Profile Details
     Route::post('/user/follow/{id}', [UserConnectionController::class, 'followUser']);
     Route::post('/user/unfollow/{id}', [UserConnectionController::class, 'unfollowUser']);
+    Route::get('/user/followers/{id?}', [UserConnectionController::class, 'followersList']);
+    Route::get('/user/followings/{id?}', [UserConnectionController::class, 'followingList']);
     Route::get('/user/profile/{id}', [UserConnectionController::class, 'getProfileDetails']);
 
     // Chat & Group Management System

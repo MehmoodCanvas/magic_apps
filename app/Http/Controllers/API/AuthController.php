@@ -136,10 +136,39 @@ class AuthController extends Controller
                 'subCategory'
             ]) : null;
 
+            // Counts
+            $followersCount = $user->followers()->count();
+            $followingCount = $user->followings()->count();
+            $connectionsCount = $user->connections()->count();
+
+            // Achievements count: Academic trophies + achieved badges
+            $trophyCount = \App\Models\AcademicPlanning::where('user_id', $user->id)->where('has_trophy', true)->count();
+            
+            $completedSkillsCount = \App\Models\Skills::where('user_id', $user->id)->where('status', 'completed')->count();
+            $skillsBadgesEarned = \App\Models\Badge::where('type', 'skills')->where('required_amount', '<=', $completedSkillsCount)->count();
+            
+            $completedGoalsCount = \App\Models\Goal::where('user_id', $user->id)->where('status', 'completed')->count();
+            $goalsBadgesEarned = \App\Models\Badge::where('type', 'goals')->where('required_amount', '<=', $completedGoalsCount)->count();
+
+            $achievementsCount = $trophyCount + $skillsBadgesEarned + $goalsBadgesEarned;
+
             return response()->json([
                 'status' => true,
                 'user' => $user,
-                'profile' => $profile
+                'profile' => $profile,
+                'stats' => [
+                    'followers_count' => $followersCount,
+                    'following_count' => $followingCount,
+                    'connections_count' => $connectionsCount,
+                    'achievements_count' => $achievementsCount,
+                ],
+                'relationships' => [
+                    'is_self' => true,
+                    'connection_status' => 'self', // Changed to self for authenticated user
+                    'is_following' => false,
+                    'is_blocked' => false,
+                    'has_blocked_me' => false,
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);

@@ -313,7 +313,49 @@ class UserConnectionController extends Controller
         ]);
     }
 
-    // 👤 12. Get Target User Profile Details
+    // 👥 12. Get Followers List
+    public function followersList(Request $request, $id = null)
+    {
+        $userId = $id ?: $request->user()->id;
+        $user = User::find($userId);
+
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'User not found'], 404);
+        }
+
+        $followers = $user->followers()
+            ->select('users.id', 'users.first_name', 'users.last_name', 'users.email')
+            ->with('profile:id,user_id,profile_picture')
+            ->paginate(20);
+
+        return response()->json([
+            'status' => true,
+            'data' => $followers,
+        ]);
+    }
+
+    // 👥 13. Get Following List
+    public function followingList(Request $request, $id = null)
+    {
+        $userId = $id ?: $request->user()->id;
+        $user = User::find($userId);
+
+        if (!$user) {
+            return response()->json(['status' => false, 'message' => 'User not found'], 404);
+        }
+
+        $following = $user->followings()
+            ->select('users.id', 'users.first_name', 'users.last_name', 'users.email')
+            ->with('profile:id,user_id,profile_picture')
+            ->paginate(20);
+
+        return response()->json([
+            'status' => true,
+            'data' => $following,
+        ]);
+    }
+
+    // 👤 14. Get Target User Profile Details
     public function getProfileDetails(Request $request, $id)
     {
         $currentUser = $request->user();
