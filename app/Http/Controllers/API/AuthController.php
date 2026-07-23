@@ -155,7 +155,7 @@ class AuthController extends Controller
             return response()->json([
                 'status' => true,
                 'user' => $user,
-                'profile' => $profile,
+                // 'profile' => $profile,
                 'stats' => [
                     'followers_count' => $followersCount,
                     'following_count' => $followingCount,
