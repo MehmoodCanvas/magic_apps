@@ -77,6 +77,46 @@ class FeedPostController extends Controller
         }
     }
 
+    // Get posts of a specific user by ID
+    public function userPostById($id)
+    {
+        try {
+            $user = \App\Models\User::find($id);
+
+            if (!$user) {
+                return response()->json(['status' => false, 'message' => 'User not found'], 404);
+            }
+
+            $userId = auth()->id();
+
+            $posts = FeedPost::select('feed_posts.*')
+                ->where('feed_posts.user_id', $id)
+                ->where('feed_posts.is_published', 1)
+                ->with(['user.profile', 'attachments', 'sharedPosts.user.profile', 'sharedPosts.attachments'])
+                ->withCount(['likes', 'comments', 'shares'])
+                ->leftJoin('post_likes as pl', function ($join) use ($userId) {
+                    $join->on('feed_posts.id', '=', 'pl.post_id')
+                        ->where('pl.user_id', '=', $userId);
+                })
+                ->leftJoin('follows as f', function ($join) use ($userId) {
+                    $join->on('feed_posts.user_id', '=', 'f.following_id')
+                        ->where('f.follower_id', '=', $userId);
+                })
+                ->addSelect(DB::raw('IF(pl.id IS NULL, false, true) as is_user_liked'))
+                ->addSelect(DB::raw('IF(f.id IS NULL, false, true) as is_following_author'))
+                ->orderByDesc('feed_posts.created_at')
+                ->paginate(10);
+
+            return response()->json([
+                'status' => true,
+                'data' => $posts,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function userSharePost()
     {
         try {

@@ -33,6 +33,9 @@
                     <x-nav-link :href="route('admin.academic-plannings.index')" :active="request()->routeIs('admin.academic-plannings.*')">
                         {{ __('Academic Plannings') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('User Management') }}
+                    </x-nav-link>
                 </div>
             </div>
 

@@ -92,6 +92,13 @@ class CoachingSessionController extends Controller
     public function store(Request $request)
     {
         try {
+            $user = auth()->user();
+            if ($user->user_role !== 'admin' && !$user->can_manage_sessions) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have permission to create sessions.'
+                ], 403);
+            }
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255',
                 'short_description' => 'required|string',
@@ -217,6 +224,14 @@ class CoachingSessionController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            $user = auth()->user();
+            if ($user->user_role !== 'admin' && !$user->can_manage_sessions) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have permission to manage sessions.'
+                ], 403);
+            }
+
             $session = CoachingSession::findOrFail($id);
 
             if ($session->user_id !== auth()->id()) {
@@ -288,6 +303,14 @@ class CoachingSessionController extends Controller
     public function destroy($id)
     {
         try {
+            $user = auth()->user();
+            if ($user->user_role !== 'admin' && !$user->can_manage_sessions) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'You do not have permission to manage sessions.'
+                ], 403);
+            }
+
             $session = CoachingSession::findOrFail($id);
 
             if ($session->user_id !== auth()->id()) {

@@ -35,6 +35,10 @@ Route::middleware('auth')->group(function () {
 
         Route::get('academic-plannings', [\App\Http\Controllers\Admin\AcademicPlanningController::class, 'index'])->name('academic-plannings.index');
         Route::post('academic-plannings/{id}/toggle-trophy', [\App\Http\Controllers\Admin\AcademicPlanningController::class, 'toggleTrophy'])->name('academic-plannings.toggle-trophy');
+
+        // User Management
+        Route::get('users', [\App\Http\Controllers\Admin\UserManagementController::class, 'index'])->name('users.index');
+        Route::post('users/{id}/toggle-session-permission', [\App\Http\Controllers\Admin\UserManagementController::class, 'toggleSessionPermission'])->name('users.toggle-session-permission');
     });
 });
 

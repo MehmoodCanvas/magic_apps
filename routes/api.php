@@ -99,6 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/posts', [FeedPostController::class, 'allPost']);
     Route::get('/user/posts', [FeedPostController::class, 'userPost']);
+    Route::get('/user/posts/{id}', [FeedPostController::class, 'userPostById']);
     Route::get('/user/share/posts', [FeedPostController::class, 'userSharePost']);
     Route::get('/user/post/attachments', [FeedPostController::class, 'userPostAttachments']);
     Route::get('/post/{id}', [FeedPostController::class, 'show']);
