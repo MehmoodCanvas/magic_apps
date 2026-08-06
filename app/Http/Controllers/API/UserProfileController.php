@@ -186,6 +186,68 @@ class UserProfileController extends Controller
         ]);
     }
 
+    // Update Cover Image
+    public function updateCoverImage(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'cover_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors(), 'status' => false], 422);
+        }
+
+        $user = $request->user();
+        $profile = $user->profile;
+
+        // Delete old cover image if exists
+        if ($profile && $profile->cover_image) {
+            $oldPath = public_path($profile->cover_image);
+            if (file_exists($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        $file = $request->file('cover_image');
+        $filename = time() . '_cover_' . $file->getClientOriginalName();
+        $file->move(public_path('cover_images'), $filename);
+        $coverPath = '/cover_images/' . $filename;
+
+        $profile = $user->profile()->updateOrCreate(
+            ['user_id' => $user->id],
+            ['cover_image' => $coverPath]
+        );
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Cover image set successfully',
+            'cover_image' => $coverPath,
+        ]);
+    }
+
+    // Delete Cover Image
+    public function deleteCoverImage(Request $request)
+    {
+        $user = $request->user();
+        $profile = $user->profile;
+
+        if (!$profile || !$profile->cover_image) {
+            return response()->json(['status' => false, 'message' => 'No cover image found'], 404);
+        }
+
+        $oldPath = public_path($profile->cover_image);
+        if (file_exists($oldPath)) {
+            unlink($oldPath);
+        }
+
+        $profile->update(['cover_image' => null]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Cover image remove successfully',
+        ]);
+    }
+
     // Search Users by name or email
     public function searchUsers(Request $request)
     {

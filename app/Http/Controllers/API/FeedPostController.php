@@ -27,7 +27,16 @@ class FeedPostController extends Controller
                 ->toArray();
 
             $query = FeedPost::select('feed_posts.*')
-                ->with(['user.profile', 'attachments', 'sharedPosts.user.profile', 'sharedPosts.attachments'])
+                ->with([
+                    'user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'attachments',
+                    'sharedPosts.user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'sharedPosts.attachments'
+                ])
                 ->withCount(['likes', 'comments', 'shares'])
                 ->leftJoin('post_likes as pl', function ($join) use ($userId) {
                     $join->on('feed_posts.id', '=', 'pl.post_id')
@@ -61,8 +70,18 @@ class FeedPostController extends Controller
     public function userPost()
     {
         try{
-            $posts = FeedPost::where('user_id', auth()->id())->with(['user', 'attachments', 'sharedPosts.user', 'sharedPosts.attachments'])
-            ->withCount(['likes', 'comments', 'shares']) // 👈 only count
+            $posts = FeedPost::where('user_id', auth()->id())
+                ->with([
+                    'user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'attachments',
+                    'sharedPosts.user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'sharedPosts.attachments'
+                ])
+                ->withCount(['likes', 'comments', 'shares']) // 👈 only count
             ->latest()
             ->paginate(10);
 
@@ -92,7 +111,16 @@ class FeedPostController extends Controller
             $posts = FeedPost::select('feed_posts.*')
                 ->where('feed_posts.user_id', $id)
                 ->where('feed_posts.is_published', 1)
-                ->with(['user.profile', 'attachments', 'sharedPosts.user.profile', 'sharedPosts.attachments'])
+                ->with([
+                    'user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'attachments',
+                    'sharedPosts.user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'sharedPosts.attachments'
+                ])
                 ->withCount(['likes', 'comments', 'shares'])
                 ->leftJoin('post_likes as pl', function ($join) use ($userId) {
                     $join->on('feed_posts.id', '=', 'pl.post_id')
@@ -120,8 +148,18 @@ class FeedPostController extends Controller
     public function userSharePost()
     {
         try {
-            $posts = FeedPost::where('user_id', auth()->id())->where('is_shared', 1)->with(['user', 'attachments', 'sharedPosts.user', 'sharedPosts.attachments'])
-            ->withCount(['likes', 'comments', 'shares']) // 👈 only count
+            $posts = FeedPost::where('user_id', auth()->id())->where('is_shared', 1)
+                ->with([
+                    'user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'attachments',
+                    'sharedPosts.user' => function ($q) {
+                        $q->withCount('followers')->with('profile');
+                    },
+                    'sharedPosts.attachments'
+                ])
+                ->withCount(['likes', 'comments', 'shares']) // 👈 only count
             ->latest()
             ->paginate(10);
 
@@ -208,7 +246,16 @@ class FeedPostController extends Controller
     {
         try {
 
-            $post = FeedPost::with('user', 'attachments','sharedPosts.user', 'sharedPosts.attachments')->withCount(['likes', 'comments', 'shares'])->findOrFail($id);
+            $post = FeedPost::with([
+                'user' => function ($q) {
+                    $q->withCount('followers')->with('profile');
+                },
+                'attachments',
+                'sharedPosts.user' => function ($q) {
+                    $q->withCount('followers')->with('profile');
+                },
+                'sharedPosts.attachments'
+            ])->withCount(['likes', 'comments', 'shares'])->findOrFail($id);
             return response()->json(['status' => true, 'data' => $post]);
 
         } catch (\Exception $e) {
