@@ -18,6 +18,7 @@ class SessionBooking extends Model
         'payment_status',
         'payment_method',
         'transaction_id',
+        'thawani_session_id',
         'total_price',
         'status',
     ];

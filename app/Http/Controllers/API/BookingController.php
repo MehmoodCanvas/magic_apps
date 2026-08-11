@@ -5,8 +5,11 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use App\Models\CoachingSession;
 use App\Models\SessionBooking;
+use App\Models\Product; // In case we need it for something else, but mainly ThawaniService
+use App\Services\ThawaniService;
 
 class BookingController extends Controller
 {
@@ -45,33 +48,205 @@ class BookingController extends Controller
                 }
             }
 
+            DB::beginTransaction();
             $bookings = [];
+            $thawaniProducts = [];
+            $totalAmount = 0;
+
             foreach ($request->items as $item) {
                 $session = CoachingSession::findOrFail($item['session_id']);
-                
+                $totalAmount += $session->price;
+
                 $bookings[] = SessionBooking::create([
                     'user_id' => auth()->id(),
                     'coaching_session_id' => $session->id,
                     'booking_date' => $item['booking_date'],
                     'start_time' => $item['start_time'],
                     'end_time' => $item['end_time'],
-                    'payment_status' => 'pending',
+                    'payment_status' => 'unpaid',
                     'total_price' => $session->price,
-                    'status' => 'booked',
+                    'status' => 'pending',
+                ]);
+
+                $thawaniProducts[] = [
+                    'name' => $session->title,
+                    'quantity' => 1,
+                    'unit_amount' => (int)($session->price * 1000), // Convert OMR to baisa
+                ];
+            }
+
+            // Create Thawani checkout session
+            $thawaniService = new ThawaniService();
+            $bookingIds = implode(',', array_column($bookings, 'id'));
+            
+            $thawaniResult = $thawaniService->createCheckoutSession([
+                'client_reference_id' => 'bookings-' . $bookingIds . '-' . time(),
+                'products' => $thawaniProducts,
+                'success_url' => url('/api/session-bookings/payment/success?booking_ids=' . $bookingIds),
+                'cancel_url' => url('/api/session-bookings/payment/cancel?booking_ids=' . $bookingIds),
+                'metadata' => [
+                    'user_id' => (string)auth()->id(),
+                    'booking_ids' => $bookingIds,
+                ],
+            ]);
+
+            if (!$thawaniResult['status']) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Payment session creation failed: ' . ($thawaniResult['message'] ?? 'Unknown error'),
+                ], 400);
+            }
+
+            // Save Thawani session info in bookings
+            $sessionId = $thawaniResult['session_id'];
+            foreach ($bookings as $booking) {
+                $booking->update([
+                    'thawani_session_id' => $sessionId,
                 ]);
             }
 
+            DB::commit();
+
             return response()->json([
                 'status' => true,
-                'message' => 'Sessions booked successfully.',
-                'data' => $bookings
+                'message' => 'Sessions booked. Redirect to payment.',
+                'data' => [
+                    'bookings' => $bookings,
+                    'total_price' => $totalAmount,
+                    'thawani_session_id' => $sessionId,
+                    'redirect_url' => $thawaniResult['redirect_url'],
+                ]
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'status' => false,
                 'message' => 'Something went wrong: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * GET /session-bookings/payment/success
+     */
+    public function bookingPaymentSuccess(Request $request)
+    {
+        $bookingIds = $request->query('booking_ids');
+
+        if (!$bookingIds) {
+            return response('<h1>Error: Booking IDs missing</h1>', 400);
+        }
+
+        $ids = explode(',', $bookingIds);
+        $bookings = SessionBooking::whereIn('id', $ids)->get();
+
+        if ($bookings->isNotEmpty()) {
+            $firstBooking = $bookings->first();
+            $sessionId = $firstBooking->thawani_session_id;
+
+            if ($sessionId && $firstBooking->payment_status !== 'paid') {
+                $thawaniService = new ThawaniService();
+                $result = $thawaniService->getSession($sessionId);
+
+                if ($result['status'] && isset($result['data']['payment_status']) && $result['data']['payment_status'] === 'paid') {
+                    foreach ($bookings as $booking) {
+                        $booking->update([
+                            'payment_status' => 'paid',
+                            'status' => 'booked',
+                            'transaction_id' => $sessionId,
+                            'payment_method' => 'thawani'
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return response()->view('payments.thawani-redirect', [
+            'status' => 'success',
+            'order_id' => $bookingIds, // Using order_id variable for view compatibility
+            'message' => 'Payment Successful!',
+            'deep_link' => "magicapp://api/session-bookings/payment/success?booking_ids=" . $bookingIds,
+        ]);
+    }
+
+    /**
+     * GET /session-bookings/payment/cancel
+     */
+    public function bookingPaymentCancel(Request $request)
+    {
+        $bookingIds = $request->query('booking_ids');
+
+        if ($bookingIds) {
+            $ids = explode(',', $bookingIds);
+            $bookings = SessionBooking::whereIn('id', $ids)->get();
+            
+            foreach ($bookings as $booking) {
+                if ($booking->payment_status !== 'paid') {
+                    $booking->update([
+                        'payment_status' => 'cancelled',
+                        'status' => 'cancelled',
+                    ]);
+                }
+            }
+        }
+
+        return response()->view('payments.thawani-redirect', [
+            'status' => 'cancelled',
+            'order_id' => $bookingIds,
+            'message' => 'Payment Cancelled',
+            'deep_link' => "magicapp://api/session-bookings/payment/cancel?booking_ids=" . $bookingIds,
+        ]);
+    }
+
+    /**
+     * GET /session-bookings/payment/verify/{thawani_session_id}
+     */
+    public function verifyBookingPayment($thawaniSessionId)
+    {
+        $bookings = SessionBooking::with('coachingSession')
+            ->where('user_id', auth()->id())
+            ->where('thawani_session_id', $thawaniSessionId)
+            ->get();
+
+        if ($bookings->isEmpty()) {
+            return response()->json(['status' => false, 'message' => 'Bookings not found.'], 404);
+        }
+
+        $firstBooking = $bookings->first();
+
+        // If not verified yet
+        if (!in_array($firstBooking->payment_status, ['paid', 'cancelled'])) {
+            $thawaniService = new ThawaniService();
+            $result = $thawaniService->getSession($thawaniSessionId);
+
+            if ($result['status'] && isset($result['data']['payment_status'])) {
+                $thawaniStatus = $result['data']['payment_status'];
+
+                foreach ($bookings as $booking) {
+                    if ($thawaniStatus === 'paid') {
+                        $booking->update([
+                            'payment_status' => 'paid',
+                            'status' => 'booked',
+                            'transaction_id' => $thawaniSessionId,
+                            'payment_method' => 'thawani'
+                        ]);
+                    } elseif ($thawaniStatus === 'cancelled') {
+                        $booking->update([
+                            'payment_status' => 'cancelled',
+                            'status' => 'cancelled'
+                        ]);
+                    }
+                }
+                $bookings = $bookings->fresh();
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Payment status: ' . $bookings->first()->payment_status,
+            'data' => $bookings,
+        ]);
     }
 
     public function index(Request $request)

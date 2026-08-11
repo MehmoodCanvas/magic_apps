@@ -218,6 +218,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [BookingController::class, 'index']);
         Route::get('/{id}', [BookingController::class, 'getBookings']);
         Route::post('/create', [BookingController::class, 'store']);
+        Route::get('/payment/verify/{thawani_session_id}', [BookingController::class, 'verifyBookingPayment']);
     });
 
     Route::prefix('academic-subjects')->group(function () {
@@ -258,6 +259,11 @@ Route::prefix('thawani-test')->group(function () {
 Route::prefix('store/payment')->group(function () {
     Route::get('/success', [StoreController::class, 'paymentSuccess']);
     Route::get('/cancel', [StoreController::class, 'paymentCancel']);
+});
+
+Route::prefix('session-bookings/payment')->group(function () {
+    Route::get('/success', [BookingController::class, 'bookingPaymentSuccess']);
+    Route::get('/cancel', [BookingController::class, 'bookingPaymentCancel']);
 });
 
 // email=wahjsgffdjur@mailinator.com
