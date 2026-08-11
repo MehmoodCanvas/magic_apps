@@ -140,6 +140,7 @@ class BookingController extends Controller
 
         $ids = explode(',', $bookingIds);
         $bookings = SessionBooking::whereIn('id', $ids)->get();
+        $sessionId = null;
 
         if ($bookings->isNotEmpty()) {
             $firstBooking = $bookings->first();
@@ -166,7 +167,7 @@ class BookingController extends Controller
             'status' => 'success',
             'order_id' => $bookingIds, // Using order_id variable for view compatibility
             'message' => 'Payment Successful!',
-            'deep_link' => "magicapp://api/session-bookings/payment/success?booking_ids=" . $bookingIds,
+            'deep_link' => "magicapp://api/session-bookings/payment/success?booking_ids=" . $bookingIds . ($sessionId ? "&thawani_session_id=" . $sessionId : ""),
         ]);
     }
 
@@ -176,10 +177,15 @@ class BookingController extends Controller
     public function bookingPaymentCancel(Request $request)
     {
         $bookingIds = $request->query('booking_ids');
+        $sessionId = null;
 
         if ($bookingIds) {
             $ids = explode(',', $bookingIds);
             $bookings = SessionBooking::whereIn('id', $ids)->get();
+            
+            if ($bookings->isNotEmpty()) {
+                $sessionId = $bookings->first()->thawani_session_id;
+            }
             
             foreach ($bookings as $booking) {
                 if ($booking->payment_status !== 'paid') {
@@ -195,7 +201,7 @@ class BookingController extends Controller
             'status' => 'cancelled',
             'order_id' => $bookingIds,
             'message' => 'Payment Cancelled',
-            'deep_link' => "magicapp://api/session-bookings/payment/cancel?booking_ids=" . $bookingIds,
+            'deep_link' => "magicapp://api/session-bookings/payment/cancel?booking_ids=" . $bookingIds . ($sessionId ? "&thawani_session_id=" . $sessionId : ""),
         ]);
     }
 
