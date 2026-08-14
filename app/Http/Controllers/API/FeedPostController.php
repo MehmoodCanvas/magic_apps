@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\PostLikeNotification;
+use App\Notifications\PostShareNotification;
 
 class FeedPostController extends Controller
 {
@@ -391,7 +393,7 @@ class FeedPostController extends Controller
     public function like($id)
     {
         try {
-            FeedPost::findOrFail($id);
+            $post = FeedPost::findOrFail($id);
             $user = auth()->user();
             $like = PostLike::where('post_id', $id)->where('user_id', $user->id)->first();
             if ($like) {
@@ -400,6 +402,10 @@ class FeedPostController extends Controller
             } else {
                 PostLike::create(['post_id' => $id,'user_id' => $user->id]);
                 $status = 'liked';
+
+                if ($post->user_id !== $user->id) {
+                    $post->user->notify(new PostLikeNotification($user, $post));
+                }
             }
 
             $likeCount = PostLike::where('post_id', $id)->count();
@@ -476,6 +482,10 @@ class FeedPostController extends Controller
                 'is_shared' => true,
                 'original_post_id' => $original->id,
             ]);
+
+            if ($original->user_id !== auth()->id()) {
+                $original->user->notify(new PostShareNotification(auth()->user(), $original));
+            }
 
             return response()->json([
                 'message' => 'Post shared successfully.',

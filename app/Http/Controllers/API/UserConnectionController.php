@@ -10,6 +10,10 @@ use App\Models\UserReport;
 use App\Models\Follow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Notifications\FollowNotification;
+use App\Notifications\UnfollowNotification;
+use App\Notifications\ConnectionRequestNotification;
+use App\Notifications\UnconnectNotification;
 
 class UserConnectionController extends Controller
 {
@@ -48,6 +52,8 @@ class UserConnectionController extends Controller
             'receiver_id' => $receiver->id,
             'status' => 'pending',
         ]);
+
+        $receiver->notify(new ConnectionRequestNotification($sender));
 
         return response()->json([
             'status' => true,
@@ -286,6 +292,8 @@ class UserConnectionController extends Controller
             'following_id' => $following->id,
         ]);
 
+        $following->notify(new FollowNotification($follower));
+
         return response()->json([
             'status' => true,
             'message' => 'User followed successfully',
@@ -306,6 +314,8 @@ class UserConnectionController extends Controller
         }
 
         $follow->delete();
+
+        User::find($id)->notify(new UnfollowNotification($follower));
 
         return response()->json([
             'status' => true,

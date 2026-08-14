@@ -71,6 +71,10 @@ class AuthController extends Controller
                 return response()->json(['status' => false, 'message' => 'Invalid credentials'], 401);
             }
 
+            if ($user->is_active === false) {
+                return response()->json(['status' => false, 'message' => 'Your account has been deactivated'], 403);
+            }
+
             $token = $user->createToken('api_token')->plainTextToken;
 
             return response()->json([
@@ -104,6 +108,27 @@ class AuthController extends Controller
 
             return response()->json(['status' => true, 'message' => 'Password changed successfully']);
 
+        } catch (\Exception $e) {
+            return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deactivateAccount(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            $user->update([
+                'is_active' => false
+            ]);
+
+            // Revoke all tokens
+            $user->tokens()->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Account deactivated successfully.'
+            ]);
         } catch (\Exception $e) {
             return response()->json(['status' => false, 'message' => $e->getMessage()], 500);
         }

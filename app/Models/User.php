@@ -24,6 +24,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'can_manage_sessions',
+        'is_active',
     ];
 
     /**
@@ -45,6 +46,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'can_manage_sessions' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function profile()

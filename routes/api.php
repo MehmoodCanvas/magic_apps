@@ -57,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/cover-image/delete', [UserProfileController::class, 'deleteCoverImage']);
     Route::get('/user/search', [UserProfileController::class, 'searchUsers']);
     Route::post('/reset-password', [AuthController::class, 'changePassword']);
+    Route::post('/user/deactivate', [AuthController::class, 'deactivateAccount']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/countries', [UserProfileController::class, 'countries']);
@@ -219,6 +220,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [BookingController::class, 'getBookings']);
         Route::post('/create', [BookingController::class, 'store']);
         Route::get('/payment/verify/{thawani_session_id}', [BookingController::class, 'verifyBookingPayment']);
+    });
+
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [\App\Http\Controllers\API\NotificationController::class, 'index']);
+        Route::get('/unread-count', [\App\Http\Controllers\API\NotificationController::class, 'unreadCount']);
+        Route::post('/read-all', [\App\Http\Controllers\API\NotificationController::class, 'markAllAsRead']);
+        Route::post('/read/{id}', [\App\Http\Controllers\API\NotificationController::class, 'markAsRead']);
     });
 
     Route::prefix('academic-subjects')->group(function () {
