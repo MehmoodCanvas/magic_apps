@@ -2,9 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Channels\FcmChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class UnconnectNotification extends Notification
@@ -20,7 +20,19 @@ class UnconnectNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', FcmChannel::class];
+    }
+
+    public function toFcm(object $notifiable): array
+    {
+        return [
+            'title' => 'Connection Removed',
+            'body' => $this->sender->first_name . ' ' . $this->sender->last_name . ' removed connection with you',
+            'data' => [
+                'type' => 'unconnect',
+                'sender_id' => $this->sender->id,
+            ],
+        ];
     }
 
     public function toArray(object $notifiable): array

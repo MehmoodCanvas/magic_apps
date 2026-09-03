@@ -227,6 +227,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/unread-count', [\App\Http\Controllers\API\NotificationController::class, 'unreadCount']);
         Route::post('/read-all', [\App\Http\Controllers\API\NotificationController::class, 'markAllAsRead']);
         Route::post('/read/{id}', [\App\Http\Controllers\API\NotificationController::class, 'markAsRead']);
+        Route::post('/update-fcm-token', [\App\Http\Controllers\API\NotificationController::class, 'updateFcmToken']);
     });
 
     Route::prefix('academic-subjects')->group(function () {

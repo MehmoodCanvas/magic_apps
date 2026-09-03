@@ -39,4 +39,9 @@ return [
         'checkout_url' => env('THAWANI_MODE', 'test') === 'live' ? 'https://checkout.thawani.om/pay' : 'https://uatcheckout.thawani.om/pay',
     ],
 
+    'firebase' => [
+        'credentials' => env('FIREBASE_CREDENTIALS', 'storage/app/firebase-credentials.json'),
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+    ],
+
 ];

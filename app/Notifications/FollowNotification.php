@@ -2,9 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Channels\FcmChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class FollowNotification extends Notification
@@ -20,7 +20,19 @@ class FollowNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', FcmChannel::class];
+    }
+
+    public function toFcm(object $notifiable): array
+    {
+        return [
+            'title' => 'New Follower',
+            'body' => $this->sender->first_name . ' ' . $this->sender->last_name . ' started following you',
+            'data' => [
+                'type' => 'follow',
+                'sender_id' => $this->sender->id,
+            ],
+        ];
     }
 
     public function toArray(object $notifiable): array

@@ -55,4 +55,20 @@ class NotificationController extends Controller
             'unread_count' => $count
         ]);
     }
+
+    public function updateFcmToken(Request $request)
+    {
+        $request->validate([
+            'fcm_token' => 'required|string',
+        ]);
+
+        $request->user()->update([
+            'fcm_token' => $request->fcm_token,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'FCM token updated successfully',
+        ]);
+    }
 }
